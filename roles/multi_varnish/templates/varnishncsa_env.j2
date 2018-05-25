@@ -1,0 +1,10 @@
+# Configuration file for varnishncsa
+#
+
+# NCSA log format, to be used by http log analyzers
+VARNISHNCSA_ENABLED=1
+
+DAEMON_OPTS="-a -w /var/log/varnish/{{ item.name }}.log -F '%{Host}I %h %l %u %t "%m %U %H" %s %b "%{Referer}i" "%{User-agent}i" %{Varnish:time_firstbyte}x'"
+
+
+

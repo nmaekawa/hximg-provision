@@ -1,0 +1,45 @@
+---
+
+# assumes either aws or vagrant, then derive remote_user(assumes ubuntu)
+use_aws: "{{ (ec2_tag_cluster == 'vagrant') | ternary(False, True) }}"
+my_remote_user: "{{ use_aws | ternary('ubuntu', 'vagrant') }}"
+
+org_dns_domain: "harvardx.harvard.edu"
+
+
+# VARNISH VARS
+# -------------------------------------------------------------
+varnish_package_name: "varnish"
+varnish_version: "5.0"
+
+varnish_secret: "14bac2e6-1e34-4770-8078-974373b76c90"
+varnish_config_dir: /etc/varnish
+varnish_initd_default_dir: /etc/default
+varnish_limit_nofile: 131072
+
+varnish_storage: "file,/var/lib/varnish/varnish_storage.bin,256M"
+varnish_pidfile: /run/varnishd.pid
+
+varnishd_extra_options: ""
+
+varnish_systemd_config_dir: '/etc/systemd/system'
+varnishlog_enable: True
+
+varnish_instances_config:
+    - name: 'hx'
+      listen_port: '9010'
+      backend_host: '127.0.0.1'
+      backend_port: '8010'
+      admin_listen_host: '127.0.0.1'
+      admin_listen_port: '6010'
+      vcl_template_path: 'roles/multi_varnish/templates/varnish_instance.vcl.j2'
+    - name: 'ids'
+      listen_port: '9011'
+      backend_host: 'ids.lib.harvard.edu'
+      backend_port: '443'
+      admin_listen_host: '127.0.0.1'
+      admin_listen_port: '6011'
+      vcl_template_path: 'roles/multi_varnish/templates/varnish_instance.vcl.j2'
+
+
+

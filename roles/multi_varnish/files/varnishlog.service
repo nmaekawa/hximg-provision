@@ -1,0 +1,19 @@
+#
+# from https://ispire.me/running-multiple-instances-of-varnish-using-systemd/
+#
+[Unit]
+Description=Varnish Cache HTTP acceleration logging daemon multi-instance
+CondititonPathExists=/etc/default/varnish-%I
+After=varnish@%I.service
+
+[Service]
+Type=forking
+Restart=always
+RestartSec=5
+User=varnishlog
+Group=varnish
+ExecStart=/usr/bin/varnishlog -D -a -w /var/log/varnish/%I.log -t off -n %I
+ExecReload=/bin/kill -HUP $MAINPID
+
+[Install]
+WantedBy=multi-user.target

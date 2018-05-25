@@ -1,0 +1,92 @@
+---
+#
+# varnish_instances_config:
+#     - name: 'instance1'
+#       listen_port: 'instance_listen_port'
+#       backend_host: 'instance1_backend_host'
+#       backend_port: 'instance1_backend_port'
+#       admin_listen_host: 'instance1_admin_host'
+#       admin_listen_port: 'instance1_admin_host'
+#       vcl_template_path: 'vcl/template/path/relative/to/playbook/root/dir'
+#       varnish_env_path: 'varnish/env/path/relative/to/playbook/root/dir'
+#       varnishncsa_env_path: 'varnishncsa/env/path/relative/to/playbook/root/dir'
+#
+#     - name: 'instance2'
+#       backend_host: 'instance2_backend_host'
+#       ...
+#
+
+- include_tasks: roles/multi_varnish/tasks/install_varnish.yml
+- include_tasks: roles/multi_varnish/tasks/disable_default_service.yml
+
+# beware that these templates use references to item.name, etc
+- name: drop config for varnishd
+  template:
+      src: ../templates/varnish_env.j2
+      dest: '{{ varnish_initd_default_dir }}/varnish-{{ item.name }}'
+      owner: root
+      group: root
+      mode: '0644'
+  with_items: '{{ varnish_instances_config }}'
+
+
+- name: drop config for varnishncsa
+  template:
+      src: ../templates/varnishncsa_env.j2
+      dest: '{{ varnish_initd_default_dir }}/varnishncsa-{{ item.name }}'
+      owner: root
+      group: root
+      mode: '0644'
+  with_items: '{{ varnish_instances_config }}'
+
+
+- name: drop config for vcl
+  template:
+      src: ../templates/varnish_instance.vcl.j2
+      dest: '{{ varnish_config_dir }}/{{ item.name }}.vcl'
+      owner: root
+      group: root
+      mode: '0644'
+      force: yes
+  with_items: '{{ varnish_instances_config }}'
+
+
+- name: drop service script for varnishd, varnishncsa
+  copy:
+      src: '../files/{{ item }}'
+      dest: "{{ varnish_systemd_config_dir }}/{{ item | regex_replace('\\.service', '') }}@.service"
+      owner: root
+      group: root
+      mode: '0644'
+  with_items:
+      - varnish.service
+      - varnishncsa.service
+
+
+- name: drop service script for varnishlog
+  copy:
+      src: '../files/varnishlog.service'
+      dest: '{{ varnish_systemd_config_dir }}/varnishlog@.service'
+      owner: root
+      group: root
+      mode: '0644'
+  when: varnishlog_enable is defined and varnishlog_enable == True
+
+
+
+#    - name: create varnishlog pid dir
+#      file:
+#          path: /run/varnishlog
+#          owner: varnishlog
+#          group: varnish
+#          state: directory
+
+
+# from https://github.com/varnishcache/pkg-varnish-cache/issues/31
+#    - name: drop varnishlog.service
+#      copy:
+#          src: ../files/varnishlog.service
+#          dest: /lib/systemd/system/varnishlog.service
+#          owner: root
+#          group: root
+#

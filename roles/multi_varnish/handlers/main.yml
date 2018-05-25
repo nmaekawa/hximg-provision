@@ -1,0 +1,10 @@
+---
+- name: reload systemd
+  systemd:
+      daemon_reloaded: yes
+
+
+- name: restart varnish
+  systemd:
+      name: varnish
+      state: restarted

@@ -1,0 +1,23 @@
+#
+# from https://ispire.me/running-multiple-instances-of-varnish-using-systemd/
+#
+[Unit]
+Description=Varnish Cache HTTP accelerator multi-instance
+CondititonPathExists=/etc/default/varnish-%I
+
+[Service]
+Type=forking
+LimitNOFILE=131073
+LimitMEMLOCK=85983232
+LimitCore=infinity
+Restart=always
+RestartSec=5
+User=varnishlog
+Group=varnish
+EnvironmentFile=/etc/default/varnish-%I
+ExecStartPre=/usr/sbin/varnishd -C -f /etc/varnish/%I.vcl
+ExecStart=/usr/sbin/varnishd -n %I $DAEMON_OPTS
+ExecReload=/usr/share/varnish/reload-vcl
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,8 @@
+---
+
+- name: stop and disabled varnish unnamed service
+  systemd:
+      name: varnish
+      state: stopped
+      enabled: no
+
