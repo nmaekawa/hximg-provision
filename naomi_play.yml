@@ -1,0 +1,97 @@
+---
+- hosts: '{{ target_hosts | default("tag_service_hxmirador", true) }}'
+  remote_user: "{{ my_remote_user }}"
+  become: yes
+  become_user: root
+  gather_facts: False
+  vars_files:
+      - vars/common_vars.yml
+      - vars/hxmirador_vars.yml
+
+  tasks:
+      - name: install python2
+        raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+        register: result
+        changed_when: "result.stdout != ''"
+
+- hosts: '{{ target_hosts | default("tag_service_hxmirador", true) }}'
+  remote_user: "{{ my_remote_user }}"
+  become: yes
+  become_user: root
+  vars:
+      local_user:
+          name: '{{ service_name }}'
+          authorized: []
+  vars_files:
+      - vars/common_vars.yml
+      - vars/hxmirador_vars.yml
+
+  tasks:
+      - include_role:
+          name: external/jmcvetta.passwordless_sudo
+
+      - include_role:
+          name: external/nmaekawa.apt
+        vars:
+          apt_other_packages: "{{ apt_required_packages_hxmirador }}"
+
+      - include_role:
+          name: external/Stouts.users
+
+      - include_role:
+          name: external/Stouts.users
+        vars:
+          users_users: '{{ users_developers + [local_user] }}'
+
+      - name: add user ubuntu to sudo group
+        user:
+          name: 'ubuntu'
+          groups: sudo
+          append: yes
+
+
+
+- hosts: '{{ target_hosts | default("tag_service_hxmirador", true) }}'
+  remote_user: "{{ my_remote_user }}"
+  become: yes
+  vars_files:
+      - vars/common_vars.yml
+      - vars/hxmirador_vars.yml
+  handlers:
+    - include_tasks: handlers/main.yml
+
+  tasks:
+      - name: install webapp
+        include_role:
+            name: webapp_install
+
+      - name: run migration and collectstatic
+        include_tasks: 'roles/webapp_install/tasks/django_manage.yml'
+
+      - name: create django admin user
+        include_tasks: 'roles/webapp_install/tasks/django_admin_user.yml'
+
+      - name: config nginx
+        include_role:
+            name: nginx
+        vars:
+            #nginx_non_ssl_port: 5050
+            #nginx_ssl_port: 5450
+            nginx_template_path: roles/nginx/templates/nginx_hxmirador.j2
+
+
+- hosts: '{{ target_hosts | default("tag_service_hxmirador", true) }}'
+  remote_user: "{{ my_remote_user }}"
+  become: yes
+  vars_files:
+      - vars/common_vars.yml
+      - vars/hxmirador_vars.yml
+  handlers:
+    - include_tasks: handlers/main.yml
+
+  tasks:
+      - name: install redis
+        include_role:
+            name: external/geerlingguy.redis
+
+

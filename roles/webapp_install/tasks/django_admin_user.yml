@@ -1,4 +1,7 @@
 ---
+    - name: django admin user | print service_dotenv_path
+      debug:
+          var: service_dotenv_path
 
     - name: django admin user | create admin user
       become_user: '{{ service_user }}'
@@ -6,7 +9,9 @@
           HXMIRADOR_DOTENV_PATH: '{{ service_dotenv_path }}'
       shell: >
           . {{ service_venv_dir }}/bin/activate &&
-          python ./manage.py create_user --username {{ service_admin_user }} --password {{ service_admin_password }} --is_admin
+          printenv &&
+          pip list &&
+          {{ service_venv_dir }}/bin/python ./manage.py create_user --username {{ service_admin_user }} --password {{ service_admin_password }} --is_admin
       args:
           chdir: '{{ service_install_dir }}'
 

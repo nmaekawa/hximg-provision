@@ -9,7 +9,6 @@
             state: present
 
       - name: gunicorn | create gunicorn config
-        become_user: "{{ service_user }}"
         template:
             src: gunicorn_start.j2
             dest: "{{ service_venv_dir }}/bin/gunicorn_start"

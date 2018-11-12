@@ -1,0 +1,19 @@
+target:
+  #image: philm/ansible_target:latest
+  build: ../../docker-try/ansible_target/ubuntu1604
+  container_name: ansible_target
+  expose:
+    - "22"
+  volumes:
+    - ~/.ssh/docker_rsa.pub:/home/ubuntu/.ssh/authorized_keys
+  privileged: true
+
+test:
+  #image: philm/ansible_playbook
+  build: ../../docker-try/ansible_playbook
+  links:
+    - target
+  volumes:
+    - ~/.ssh/docker_rsa:/root/.ssh/id_rsa
+    - ~/.ssh/docker_rsa.pub:/root/.ssh/id_rsa.pub
+    - .:/ansible/playbooks

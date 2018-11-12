@@ -1,0 +1,8 @@
+[tag_manifest]
+[tag_service_hxmirador]
+ansible_target
+
+[all:vars]
+; faking ec2 tags
+ec2_tag_cluster="vagrant"
+
