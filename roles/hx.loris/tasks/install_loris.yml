@@ -10,13 +10,13 @@
           version: '{{ loris_git_version }}'
           dest: '{{ service_install_dir }}'
 
-    - name: drop simpler setup.py
-      become_user: '{{ service_user }}'
-      copy:
-          src: ../files/setup.py
-          dest: '{{ service_install_dir }}/setup.py'
-          mode: 0644
-          backup: yes
+#    - name: drop simpler setup.py
+#      become_user: '{{ service_user }}'
+#      copy:
+#          src: ../files/setup.py
+#          dest: '{{ service_install_dir }}/setup.py'
+#          mode: 0644
+#          backup: yes
 
     - name: drop wsgi.py
       become_user: '{{ service_user }}'
@@ -41,4 +41,4 @@
           chdir: '{{ service_install_dir }}'
           editable: '{{ ec2_tag_cluster == "vagrant" }}'
           virtualenv: "{{ service_venv_dir }}"
-          state: forcereinstall
+          state: present

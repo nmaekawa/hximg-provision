@@ -61,7 +61,8 @@ service_cache_dir: '{{ service_data_dir }}/cache'
 service_images_dir: '{{ service_data_dir }}/images'
 
 # uncomment below if you want loris to use s3resolver
-#loris_s3_bucket_prefix: 's3//images_bucket/images_prefix'
+default_bucket_map: '{"s3bucket": {"bucket": "my-s3-bucket", "key_prefix": "loris/images"}}'
+loris_s3bucket_map: "{{ lookup('env', 'LORIS_S3BUCKET_MAP') | default(default_bucket_map, true) }}"
 
 # how gunicorn exposes access to loris-hx
 # hack for vagrant, didn't figure why 2 ip addr
@@ -98,7 +99,7 @@ service_python_dependencies:
     - {"name": "requests",   "version": "2.11.0"}
     - {"name": "responses",  "version": "0.3.0"}
     - {"name": "boto",       "version": "2.40.0"}
-
+    - {"name": "git+https://github.com/nmaekawa/hxloris.git", "version": "master"}
 
 
 # for nmaekawa.apt

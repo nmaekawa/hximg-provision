@@ -36,7 +36,7 @@
       - vars/loris_vars.yml
   vars:
     loris_git_repo: 'https://github.com/loris-imageserver/loris.git'
-    loris_git_version: 'v2.3.3'
+    loris_git_version: 'a4a3a195'
 
   handlers:
     - include: handlers/main.yml
@@ -54,9 +54,9 @@
             local_image_sample_path_tar_gz: '/Volumes/Projects/Dev_Team/images/images_prod_20180824.tar.gz'
 
 
-  # install log/metrics scripts, syslog to s3, put-metrics to cloudwatch
+# install log/metrics scripts, syslog to s3, put-metrics to cloudwatch
+# this playbook only applied if ec2_tag_cluster == "prod"
 - import_playbook: cloudwatch_scripts_play.yml
-  when: ec2_tag_cluster == 'prod'
 
 
 - hosts: '{{ target_hosts | default("tag_service_loris", true) }}'
