@@ -1,19 +1,31 @@
 ---
 
-    - name: ensure aws creds dir exists
-      file:
-          path: /home/{{ service_user }}/.aws
-          owner: '{{ service_user }}'
-          group: '{{ service_group }}'
-          mode: 0750
-          state: directory
+  - name: ensure local aws creds available
+    become: false
+    local_action: stat path=~/.aws/loris-credentials
+    register: stat_loris_credentials
 
-    - name: add AWS CREDENTIALS!
-      copy:
-          src: ~/.aws/loris-credentials
-          dest: /home/{{ service_user }}/.aws/credentials
-          owner: '{{ service_user }}'
-          group: '{{ service_group }}'
-          mode: 0600
+  - debug:
+      msg: 'AWS CREDENTIALS not found!'
+    when: not stat_loris_credentials.stat.exists
+
+  - name: ensure aws creds dir exists in managed host
+    file:
+      path: /home/{{ service_user }}/.aws
+      owner: '{{ service_user }}'
+      group: '{{ service_group }}'
+      mode: 0750
+      state: directory
+    when: stat_loris_credentials.stat.exists
+
+  - name: add AWS CREDENTIALS!
+    copy:
+      src: ~/.aws/loris-credentials
+      dest: /home/{{ service_user }}/.aws/credentials
+      owner: '{{ service_user }}'
+      group: '{{ service_group }}'
+      mode: 0600
+    when: stat_loris_credentials.stat.exists
+
 
 

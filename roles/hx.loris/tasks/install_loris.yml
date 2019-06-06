@@ -3,13 +3,32 @@
     - name: clone repository
       become_user: '{{ service_user }}'
       git:
-          repo: '{{ loris_git_repo }}'
+          repo: '{{ service_git_repo }}'
           update: yes
           clone: yes
           force: yes
-          version: '{{ loris_git_version }}'
+          version: '{{ service_git_version }}'
           dest: '{{ service_install_dir }}'
 
+    - name: venv | create service venv
+      include_role:
+          name: external/nmaekawa.virtualenv
+      vars:
+          venv_path: "{{ service_venv_dir }}"
+          venv_user: "{{ service_user }}"
+          venv_group: "{{ service_group }}"
+          venv_python_version: 3
+
+    - name: venv | pip install requirements
+      become_user: "{{ service_user }}"
+      pip:
+          chdir: "{{ service_install_dir }}"
+          virtualenv: "{{ service_venv_dir }}"
+          requirements: "{{ service_install_dir }}/requirements.txt"
+          state: present
+
+# TODO: ideally it should test if the loris version being installed is
+# compatible with external setup.py or not.
 #    - name: drop simpler setup.py
 #      become_user: '{{ service_user }}'
 #      copy:
@@ -17,6 +36,13 @@
 #          dest: '{{ service_install_dir }}/setup.py'
 #          mode: 0644
 #          backup: yes
+
+    - name: venv | pip install extra reqs
+      become_user: "{{ service_user }}"
+      pip:
+        name: "git+https://github.com/nmaekawa/hxloris.git"
+        virtualenv: "{{ service_venv_dir }}"
+        state: present
 
     - name: drop wsgi.py
       become_user: '{{ service_user }}'
@@ -34,6 +60,10 @@
           owner: '{{ service_user }}'
           group: '{{ service_group }}'
 
+    - name: drop static content, part2
+      become_user: '{{ service_user }}'
+      shell: cp -R {{ service_install_dir }}/www/* {{ service_static_dir }}
+
     - name: pip install loris from source
       become_user: '{{ service_user }}'
       pip:
@@ -42,3 +72,12 @@
           editable: '{{ ec2_tag_cluster == "vagrant" }}'
           virtualenv: "{{ service_venv_dir }}"
           state: present
+
+    - name: drop service config
+      become_user: '{{ service_user }}'
+      template:
+          src: ../templates/loris.conf.j2
+          dest: '{{ service_config_path }}'
+          mode: 0644
+          backup: yes
+

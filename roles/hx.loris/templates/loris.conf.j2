@@ -52,17 +52,17 @@ proxy_path='{{ enable_ssl | ternary("https", "http") }}://{{ webserver_dns }}/'
 [logging]
 log_to = 'console'    # 'console'|'file'
 log_level = '{{ service_log_level | default("DEBUG", true) }}' # 'DEBUG'|'INFO'|'WARNING'|'ERROR'|'CRITICAL'
-log_dir = '{{ service_log_dir }}' # rw-
-max_size = 5242880 # 5 MB
-max_backups = 5
+#log_dir = '/var/log/loris' # rw-
+#max_size = 5242880 # 5 MB
+#max_backups = 5
 format = '%(asctime)s (%(name)s) [%(levelname)s]: %(message)s'
 
-{% if loris_s3bucket_map is defined %}
+{% if loris_s3resolver is defined and 'loris_s3bucket_map' in loris_s3resolver %}
 [resolver]
 impl = 'hxloris.s3resolver.S3Resolver'
 cache_root = '{{ service_images_dir }}'
 [[bucket_map]]
-{% for item_name, item_value in loris_s3bucket_map.items() %}
+{% for item_name, item_value in loris_s3resolver.loris_s3bucket_map.items() %}
   [[[{{ item_name }}]]]
   {% for cfg_name, cfg_value in item_value.items() %}
     {{ cfg_name }} = '{{ cfg_value }}'

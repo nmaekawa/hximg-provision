@@ -1,9 +1,0 @@
----
-    - name: drop service config
-      become_user: '{{ service_user }}'
-      template:
-          src: ../templates/loris.conf.j2
-          dest: '{{ service_config_path }}'
-          mode: 0644
-          backup: yes
-

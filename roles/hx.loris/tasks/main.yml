@@ -1,4 +1,7 @@
 ---
+    - debug:
+        var: apt_required_packages
+
     - name: create loris dirs
       file:
           path: '{{ item }}'
@@ -7,22 +10,17 @@
           state: directory
       with_items: '{{ service_dirs_to_create }}'
 
-      #- include_tasks: roles/hx.loris/tasks/python_dependencies.yml
-    - include_tasks: roles/hx.loris/tasks/venv.yml
     - include_tasks: roles/hx.loris/tasks/install_loris.yml
-    - include_tasks: roles/hx.loris/tasks/config_loris.yml
-
-    - include_tasks: roles/hx.loris/tasks/aws_creds.yml
-      when: ec2_tag_cluster == 'vagrant' and ( loris_s3bucket_map is defined )
-
     - include_tasks: roles/hx.loris/tasks/setup_gunicorn.yml
 
-    - include_tasks: roles/hx.loris/tasks/copy_images.yml
-      when: ec2_tag_cluster == 'vagrant' and ( local_image_sample_path_tar_gz is defined )
+    # only copies if available locally at ~/.aws/loris-credentials
+    - include_tasks: roles/hx.loris/tasks/aws_creds.yml
 
     - name: restart service
       supervisorctl:
           name: '{{ service_name }}'
           state: restarted
 
+      #- include_tasks: roles/hx.loris/tasks/copy_images.yml
+      #when: ec2_tag_cluster == 'vagrant' and ( local_image_sample_path_tar_gz is defined )
 

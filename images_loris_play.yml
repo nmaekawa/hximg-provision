@@ -7,30 +7,6 @@
   remote_user: "{{ my_remote_user }}"
   become: yes
   become_user: root
-  vars:
-    local_user:
-      name: '{{ service_user }}'
-      authorized: []
-  vars_files:
-      - vars/common_vars.yml
-      - vars/loris_vars.yml
-
-  tasks:
-      - include_role:
-          name: external/nmaekawa.apt
-        vars:
-          apt_other_packages: '{{ apt_required_packages_loris }}'
-
-      - include_role:
-          name: external/Stouts.users
-        vars:
-          users_users: '{{ [local_user] }}'
-
-
-- hosts: '{{ target_hosts | default("tag_service_loris", true) }}'
-  remote_user: "{{ my_remote_user }}"
-  become: yes
-  become_user: root
   vars_files:
       - vars/common_vars.yml
       - vars/loris_vars.yml
@@ -42,16 +18,11 @@
     - include: handlers/main.yml
 
   tasks:
-      - include_role:
-          name: external/nmaekawa.apt
-        vars:
-            apt_other_packages: '{{ apt_required_packages_loris }}'
-
-      - name: setup loris
-        include_role:
-            name: hx.loris
-        vars:
-            local_image_sample_path_tar_gz: '/Volumes/Projects/Dev_Team/images/images_prod_20180824.tar.gz'
+    - name: setup loris
+      include_role:
+          name: hx.loris
+      #vars:
+      #    local_image_sample_path_tar_gz: '/Volumes/Projects/Dev_Team/images/images_prod_20180824.tar.gz'
 
 
 # install log/metrics scripts, syslog to s3, put-metrics to cloudwatch

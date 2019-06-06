@@ -35,6 +35,9 @@ users_ssh_keys: '{{ users_users }}'
 local_certs_dir: '{{ lookup("env", "LOCAL_CERTS_DIR") | default("/Volumes/magic_numbers/certs", true) }}'
 
 
+# if not vagrant, then aws and always using ssl
+enable_ssl: '{{ ec2_tag_cluster != "vagrant" }}'
+
 # webserver dns used for django apps, hx varnish, and nginx configs
 # - based on instance tags and definitions from role-specific var files
 #   e.g. vars/hxprezi_vars.yml

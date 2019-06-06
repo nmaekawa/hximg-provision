@@ -1,5 +1,5 @@
 ---
-
+#
 # SERVICE-WIDE VARS
 # -------------------------------------------------------------
 #
@@ -36,33 +36,12 @@ ids_varnish_port: '80'
 # LORIS VARS
 # -------------------------------------------------------------
 
-# these mimic loris default for setup.py
-# changes here don't actually change the actual install vars...
-service_name: "loris"
-service_user: '{{ service_name }}'
-service_group: '{{ service_name }}'
-
-service_rootdir: '/opt/{{ service_name }}'
-service_venv_dir: "{{ service_rootdir }}/venv"
-service_log_dir: "{{ service_rootdir }}/log"
-# sending app logs to syslog in supervisor
-#service_log_path: "{{ service_log_dir }}/{{ service_name }}.log"
-# uncomment, otherwise defaul is debug: 'DEBUG'|'INFO'|'WARNING'|'ERROR'|'CRITICAL'
-#service_log_level: "DEBUG"
-
-service_install_dir: '{{ service_rootdir }}/{{ service_name }}'
-service_static_dir: '{{ service_rootdir }}/www'
-service_config_dir: '{{ service_rootdir }}/conf'
-service_config_path: '{{ service_config_dir }}/{{ service_name }}.conf'
-service_bin_dir: '{{ service_rootdir }}/bin'
-service_data_dir: '{{ service_rootdir }}/data'
-service_tmp_dir: '{{ service_data_dir }}/tmp'
-service_cache_dir: '{{ service_data_dir }}/cache'
-service_images_dir: '{{ service_data_dir }}/images'
-
-# uncomment below if you want loris to use s3resolver
+# get bucket_map from enivronment
 default_bucket_map: '{"s3bucket": {"bucket": "my-s3-bucket", "key_prefix": "loris/images"}}'
-loris_s3bucket_map: "{{ lookup('env', 'LORIS_S3BUCKET_MAP') | default(default_bucket_map, true) }}"
+s3bucket_map: "{{ lookup('env', 'LORIS_S3BUCKET_MAP') | default(default_bucket_map, true) }}"
+loris_s3resolver:
+  loris_s3bucket_map: "{{ s3bucket_map }}"  # this needs to be in double quotes!
+
 
 # how gunicorn exposes access to loris-hx
 # hack for vagrant, didn't figure why 2 ip addr
@@ -74,47 +53,6 @@ hx_host: "{% for host in hostvars %}\
 hx_port: '9090'
 service_gunicorn_port: '{{ hx_port }}'
 service_gunicorn_host: '{{ hx_host }}'
-gunicorn_timeout_seconds: 300  # workers timeout - used in nginx cfg
-
-
-# easier to create dirs with this dict
-service_dirs_to_create:
-    - '{{ service_rootdir }}'
-    - '{{ service_bin_dir }}'
-    - '{{ service_log_dir }}'
-    - '{{ service_static_dir }}'
-    - '{{ service_config_dir }}'
-    - '{{ service_data_dir }}'
-    - '{{ service_tmp_dir }}'
-    - '{{ service_cache_dir }}'
-    - '{{ service_images_dir }}'
-
-
-# python packages to install
-service_python_dependencies:
-    - {"name": "Pillow",     "version": "4.3.0"}
-    - {"name": "Werkzeug",   "version": "0.12.2"}
-    - {"name": "gunicorn",   "version": "19.7.1"}
-    - {"name": "configobj",  "version": "5.0.0"}
-    - {"name": "requests",   "version": "2.11.0"}
-    - {"name": "responses",  "version": "0.3.0"}
-    - {"name": "boto",       "version": "2.40.0"}
-    - {"name": "git+https://github.com/nmaekawa/hxloris.git", "version": "master"}
-
-
-# for nmaekawa.apt
-apt_required_packages_loris:
-    - 'python3-pip'
-    - 'python3-dev'
-    - 'python3-setuptools'
-    - 'libjpeg-turbo8-dev'
-    - 'libfreetype6-dev'
-    - 'zlib1g-dev'
-    - 'liblcms2-dev'
-    - 'liblcms2-utils'
-    - 'libtiff5-dev'
-    - 'libwebp-dev'
-    - 'supervisor'
 
 
 # for Stouts.users
@@ -122,7 +60,6 @@ users_enabled: yes
 users_to_install:
     - 'nmaekawa'
     - 'lduarte'
-    - '{{ service_user }}'
 
 
 # VARNISH VARS
@@ -154,7 +91,6 @@ varnish_instances:
 # PROXY VARS
 # -------------------------------------------------------------
 
-enable_ssl: '{{ ec2_tag_cluster != "vagrant" }}'
 
 # to be overwritten when aws cluster; used when forward proxying to libraries
 #proxy_dns_resolver: '8.8.8.8' # google resolver
