@@ -11,38 +11,39 @@ service_user: '{{ service_name }}'
 service_group: '{{ service_name }}'
 
 
-# either configure loris with a FSResolver (filesys) or S3Resolver (s3)
+# optional var `loris_resolver`
+# you can configure either S3 or FS resolvers; if none defined here,
+# the default is FS resolver. If defining both, S3 takes precedence.
 #
-# loris_s3bucket_map maps an url prefix to a s3bucket and optional key prefix
+# `s3bucket_map` maps an url prefix to a s3bucket and optional key prefix
 # to build the s3 object id for a requested image. For the example below, the
 # request for http://loris.org/my_url_prefix/image.jpg/full/128,/0/default.jpg
 # will map to s3 object s3://my-s3-bucketname/loris/images/image.jpg
 #
 # hxloris s3resolver supports multiple s3buckets
 # for details, see https://github.com/nmaekawa/hxloris
-loris_s3resolver:
-  loris_s3bucket_map:
-    my_url_prefix:
-      bucket: 'my-s3-bucketname'
-      key_prefix: 'loris/images'
-
-# if both S3 and FS resolvers configured, S3Resolver wins. So to configure
-# FSResolver, assign an empty dict to variable `loris_s3resolver`.
 #
-# to pre-populate the image source dir, playbooks can copy images from a local
-# tar.gz or s3sync from a s3 bucket. Below configure one or the other; if both
-# configured, tar.gz wins!
+#
+# when using a FSResolver, you can pre-populate the image source dir:
+# playbooks can copy source images from a local tar.gz or s3sync from a s3 bucket.
+# Below configure one or the other; if both configured, tar.gz wins!
 #
 # for the example below, when configuring an s3 bucket as image source, the s3
 # sync will download from s3://my-s3-bucketname/loris/images/*
 #
-loris_fsresolver:
-  target_s3_sync_dir: '{{ service_images_dir }}'
-
-  local_image_sample_path_tar_gz: '/var/tmp/image_sample.tar.gz'
-
-  s3_sync_bucket_name: 'my-s3-bucketname'
-  s3_sync_prefix: 'loris/images'
+#loris_resolver:
+#  s3:
+#    resolver_impl: 'must.be.an.s3resolver.Implementation'
+#    s3bucket_map:
+#      my_url_prefix:
+#        bucket: 'my-s3-bucketname'
+#        key_prefix: 'loris/images'
+#  fs:
+#    download_source:
+#      from_tar_gz_path: "/local/path/to/image_sample.tar.gz"
+#      from_s3:
+#        bucket: "my-s3-bucketname"
+#        key_prefix: "loris/images"
 
 
 rootdir: '/opt'

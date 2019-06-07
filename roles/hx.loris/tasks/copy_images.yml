@@ -1,14 +1,14 @@
 ---
     - name: transfer sample images tar.gz
       copy:
-          src: '{{ local_image_sample_path_tar_gz }}'
+          src: '{{ loris_resolver.fs.download_source.from_tar_gz_path }}'
           dest: '{{ service_images_dir }}'
           owner: '{{ service_user }}'
           group: '{{ service_group }}'
 
     - name: unarchive sample images tar.gz
       unarchive:
-          src: '{{ service_images_dir }}/{{ local_image_sample_path_tar_gz | basename }}'
+          src: '{{ service_images_dir }}/{{ loris_resolver.fs.download_source.from_tar_gz_path | basename }}'
           dest: '{{ service_images_dir }}'
           owner: '{{ service_user }}'
           group: '{{ service_group }}'

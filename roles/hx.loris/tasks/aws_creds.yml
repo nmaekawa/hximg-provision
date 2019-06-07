@@ -16,7 +16,9 @@
       group: '{{ service_group }}'
       mode: 0750
       state: directory
-    when: stat_loris_credentials.stat.exists
+    when:
+      stat_loris_credentials.stat.exists and
+      ( ec2_tag_cluster == 'vagrant' )  # assumes ec2 has instance profile
 
   - name: add AWS CREDENTIALS!
     copy:
@@ -25,7 +27,38 @@
       owner: '{{ service_user }}'
       group: '{{ service_group }}'
       mode: 0600
-    when: stat_loris_credentials.stat.exists
+    when:
+      stat_loris_credentials.stat.exists and
+      ( ec2_tag_cluster == 'vagrant' )  # assumes ec2 has instance profile
 
+  - debug:
+      var: stat_loris_credentials.stat.exists
 
+  - debug:
+      var: s3_sync_bucket_name
+
+  - debug:
+      var: ec2_tag_cluster
+
+  - fail:
+      msg: '~/.aws/loris-credentials not found but required'
+    when:
+      # vagrant always needs credentials
+      # if it has to download source images from s3
+      # or access s3 directly via s3resolver
+      (not stat_loris_credentials.stat.exists) and
+      (ec2_tag_cluster == 'vagrant') and
+      (
+        (
+          (loris_resolver is defined) and
+          ('fs' in loris_resolver ) and
+          ('download_source' in loris_resolver.fs ) and
+          ('from_s3' in loris_resolver.fs.download_source)
+        )
+        or
+        (
+          (loris_resolver is defined) and
+          ('s3' in loris_resolver)
+        )
+      )
 
