@@ -38,12 +38,15 @@ service_group: '{{ service_name }}'
 #      my_url_prefix:
 #        bucket: 'my-s3-bucketname'
 #        key_prefix: 'loris/images'
+#      other_url_prefix:
+#        bucket: 'other-bucketname'
+#        key_prefix: 'loris/other-images'
 #  fs:
 #    download_source:
 #      from_tar_gz_path: "/local/path/to/image_sample.tar.gz"
 #      from_s3:
-#        bucket: "my-s3-bucketname"
-#        key_prefix: "loris/images"
+#        bucket: 'my-s3-bucketname'
+#        key_prefix: 'loris/images'
 
 
 rootdir: '/opt'

@@ -36,12 +36,19 @@ ids_varnish_port: '80'
 # LORIS VARS
 # -------------------------------------------------------------
 
-# get bucket_map from enivronment
-default_bucket_map: '{"s3bucket": {"bucket": "my-s3-bucket", "key_prefix": "loris/images"}}'
-s3bucket_map: "{{ lookup('env', 'LORIS_S3BUCKET_MAP') | default(default_bucket_map, true) }}"
-loris_s3resolver:
-  loris_s3bucket_map: "{{ s3bucket_map }}"  # this needs to be in double quotes!
-
+# get bucket_map from enivronment when s3resolver
+default_s3bucket_map: '{"s3bucket": {"bucket": "my-s3-bucket", "key_prefix": "loris/images"}}'
+s3bucket_map: "{{ lookup('env', 'LORIS_S3BUCKET_MAP') | default(default_s3bucket_map, true) }}"
+default_download_from_s3: '{"bucket": "my-s3-bucket", "key_prefix": "loris/images", "cache_key_prefix": "loris/cache"}'
+loris_download_from_s3: "{{ lookup('env', 'LORIS_DOWNLOAD_FROM_S3') | default(default_download_from_s3) }}"
+loris_resolver:
+#  s3:
+#    resolver_impl: 'hxloris.s3resolver.S3Resolver'
+#    s3bucket_map: "{{ s3bucket_map }}"
+  fs:
+    download_source:
+#      from_tar_gz_path: '/Volumes/Projects/Dev_Team/images/images_prod_20180824.tar.gz'
+      from_s3: "{{ loris_download_from_s3 }}"
 
 # how gunicorn exposes access to loris-hx
 # hack for vagrant, didn't figure why 2 ip addr
