@@ -15,6 +15,17 @@
     - include: handlers/main.yml
 
   tasks:
+    - name:  install required os packages for loris
+      include_role:
+        name: external/nmaekawa.apt
+
+    - name: create user for loris
+      include_role:
+        name: external/Stouts.users
+      vars:
+        users_users: '[{"name": "{{ service_name }}", "authorized": []}]'
+
+
     - name: setup loris
       include_role:
           name: hx.loris
@@ -47,6 +58,20 @@
       - vars/loris_vars.yml
 
   tasks:
+      - debug:
+          var: loris_resolver
+
+      - name: install packages aws
+        apt:
+          name: 'awscli'
+          state: present
+        when:
+          #ec2_tag_cluster == 'prod' and
+          (loris_resolver is defined) and
+          ('fs' in loris_resolver) and
+          ('download_source' in loris_resolver.fs) and
+          ('from_s3' in loris_resolver.fs.download_source)
+
       # install script for images sync, if images instance
       - import_tasks: roles/hx.loris/tasks/setup_s3_sync_images.yml
         vars:
