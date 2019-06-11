@@ -12,21 +12,99 @@
       - vars/loris_vars.yml
 
   handlers:
-    - include: handlers/main.yml
+      - include: handlers/main.yml
 
   tasks:
-    - name:  install required os packages for loris
+    - name: loris | install required os packages for loris
       include_role:
         name: external/nmaekawa.apt
 
-    - name: create user for loris
+    - name: loris | create user for loris
       include_role:
         name: external/Stouts.users
       vars:
         users_users: '[{"name": "{{ service_name }}", "authorized": []}]'
 
 
-    - name: setup loris
+    # os packages for loris
+    - name: aws | install packages aws
+      apt:
+        name: 'awscli'
+        state: present
+      when:
+        # needs to install aws-client if it has to
+        # - download source images from s3
+        # - download cache images from s3
+        # - access s3 directly via s3resolver
+        (
+        loris_s3_resolver is defined and loris_s3_resolver != ''
+        ) or
+        (
+        loris_download_source_from_s3 is defined and
+        loris_download_source_from_s3 != ''
+        ) or
+        (
+        loris_download_cache_from_s3 is defined and
+        loris_download_cache_from_s3 != ''
+        )
+
+
+    # copy aws-creds if vagrant cluster
+    - name: aws-creds | ensure local aws creds available
+      become: false
+      local_action: stat path=~/.aws/loris-credentials
+      register: stat_loris_credentials
+
+    - debug:
+        msg: 'AWS CREDENTIALS not found!'
+      when: not stat_loris_credentials.stat.exists
+
+    - name: aws-creds | ensure aws creds dir exists in managed host
+      file:
+        path: /home/{{ service_user }}/.aws
+        owner: '{{ service_user }}'
+        group: '{{ service_group }}'
+        mode: 0750
+        state: directory
+      when:
+        stat_loris_credentials.stat.exists and
+        ( ec2_tag_cluster == 'vagrant' )  # assumes ec2 has instance profile
+
+    - name: aws-creds | add AWS CREDENTIALS!
+      copy:
+        src: ~/.aws/loris-credentials
+        dest: /home/{{ service_user }}/.aws/credentials
+        owner: '{{ service_user }}'
+        group: '{{ service_group }}'
+        mode: 0600
+      when:
+        stat_loris_credentials.stat.exists and
+        ( ec2_tag_cluster == 'vagrant' )  # assumes ec2 has instance profile
+
+    - fail:
+        msg: '~/.aws/loris-credentials not found but required'
+      when:
+        # vagrant always needs credentials if it has to
+        # - download source images from s3
+        # - download cache images from s3
+        # - access s3 directly via s3resolver
+        (not stat_loris_credentials.stat.exists) and
+        (ec2_tag_cluster == 'vagrant') and
+        (
+          loris_s3_resolver is defined and loris_s3_resolver != ''
+          or
+          (
+          loris_download_source_from_s3 is defined and
+          loris_download_source_from_s3 != ''
+          ) or
+          (
+          loris_download_cache_from_s3 is defined and
+          loris_download_cache_from_s3 != ''
+         )
+        )
+
+
+    - name: loris | setup loris
       include_role:
           name: hx.loris
 
@@ -49,74 +127,95 @@
   become_user: root
   vars:
       project_name: '{{ hostvars[inventory_hostname].ec2_tag_project | mandatory}}'
-      service_role: '{{ hostvars[inventory_hostname].ec2_tag_service | mandatory}}'  # this should be "loris"...
-      cluster_env: '{{ (hostvars[inventory_hostname].ec2_tag_cluster == "prod")| ternary("prod", "devo") }}'
+      #service_role: '{{ hostvars[inventory_hostname].ec2_tag_service | mandatory}}'  # this should be "loris"...
+      #cluster_env: '{{ (hostvars[inventory_hostname].ec2_tag_cluster == "prod")| ternary("prod", "devo") }}'
       cloudwatch_namespace: '{{ cloudwatch_namespace_prefix }}/{{ project_name }}'
-      cronjob_scripts_dir: '/usr/local/bin'
+      #cronjob_scripts_dir: '/usr/local/bin'
   vars_files:
       - vars/common_vars.yml
       - vars/loris_vars.yml
 
   tasks:
-      - debug:
-          var: loris_resolver
-
-      - name: install packages aws
-        apt:
-          name: 'awscli'
-          state: present
-        when:
-          #ec2_tag_cluster == 'prod' and
-          (loris_resolver is defined) and
-          ('fs' in loris_resolver) and
-          ('download_source' in loris_resolver.fs) and
-          ('from_s3' in loris_resolver.fs.download_source)
-
-      # install script for images sync, if images instance
+      # install script for images sync
       - import_tasks: roles/hx.loris/tasks/setup_s3_sync_images.yml
         vars:
-            s3_sync_bucket_name: '{{ loris_resolver.fs.download_source.from_s3.bucket }}'
-            s3_sync_prefix: '{{ loris_resolver.fs.download_source.from_s3.key_prefix}}'
+            s3_sync_bucket_name: '{{ loris_download_source_from_s3.bucket }}'
+            s3_sync_prefix: '{{ loris_download_source_from_s3.key_prefix}}'
             target_s3_sync_dir: '{{ service_images_dir }}'
         when:
-          #ec2_tag_cluster == 'prod' and
-          (loris_resolver is defined) and
-          ('fs' in loris_resolver) and
-          ('download_source' in loris_resolver.fs) and
-          ('from_s3' in loris_resolver.fs.download_source)
+          (loris_download_source_from_s3 is defined) and
+          (loris_download_source_from_s3 != '')
 
-      - name: run initial s3 sync for images
+      - name: aws | run initial s3 sync for images
         become: yes
         become_user: '{{ service_user }}'
         shell: >
             /usr/bin/aws s3 sync
-            "s3://{{ loris_resolver.fs.download_source.from_s3.bucket }}/{{ loris_resolver.fs.download_source.from_s3.key_prefix}}"
+            "s3://{{ loris_download_source_from_s3.bucket }}/{{ loris_download_source_from_s3.key_prefix}}"
             "{{ service_images_dir }}"
-            2>&1 | logger -t "[s3 sync INITIAL]"
+            2>&1 | logger -t "[s3 sync source INITIAL]"
         when:
-          #ec2_tag_cluster == 'prod' and
-          (loris_resolver is defined) and
-          ('fs' in loris_resolver) and
-          ('download_source' in loris_resolver.fs) and
-          ('from_s3' in loris_resolver.fs.download_source)
+          (loris_download_source_from_s3 is defined) and
+          (loris_download_source_from_s3 != '')
 
-      # download loris cache of processed tile images; this is optional
-      - name: run initial s3 sync for loris cache
+
+      # download loris image from tar.gz files
+      - name: aws | transfer sample images tar.gz
+        copy:
+          src: '{{ loris_download_source_from_tar_gz }}'
+          dest: '{{ service_images_dir }}'
+          owner: '{{ service_user }}'
+          group: '{{ service_group }}'
+        when:
+          (loris_download_source_from_tar_gz is defined) and
+          (loris_download_source_from_tar_gz != '')
+
+      - name: aws | unarchive sample images tar.gz
+        unarchive:
+          src: '{{ service_images_dir }}/{{ loris_download_source_from_tar_gz | basename }}'
+          dest: '{{ service_images_dir }}'
+          owner: '{{ service_user }}'
+          group: '{{ service_group }}'
+          remote_src: yes
+        when:
+          (loris_download_source_from_tar_gz is defined) and
+          (loris_download_source_from_tar_gz != '')
+
+
+      # download loris cache of processed images
+      - name: aws | run initial s3 sync for loris cache
         become: yes
         become_user: '{{ service_user }}'
         shell: >
             /usr/bin/aws s3 sync
-            "s3://{{ loris_resolver.fs.download_source.from_s3.bucket }}/loris_resolver.fs.download_source.from_s3.cache_key_prefix"
+            "s3://{{ loris_download_cache_from_s3.bucket }}/loris_download_cache_from_s3.key_prefix"
             "{{ service_cache_dir }}"
-            2>&1 | logger -t "[s3 sync INITIAL]"
+            2>&1 | logger -t "[s3 sync cache INITIAL]"
         when:
-          ec2_tag_cluster == 'prod' and
-          (loris_resolver is defined) and
-          ('fs' in loris_resolver) and
-          ('download_source' in loris_resolver.fs) and
-          ('from_s3' in loris_resolver.fs.download_source) and
-          ('cache_key_prefix' in loris_resolver.fs.download_source.from_s3)
+          (loris_download_cache_from_s3 is defined) and
+          (loris_download_cache_from_s3 != '')
 
 
+      # download loris cache from tar.gz files
+      - name: aws | transfer cache images tar.gz
+        copy:
+          src: '{{ loris_resolver_download_cache_from_tar_gz }}'
+          dest: '{{ service_cache_dir }}'
+          owner: '{{ service_user }}'
+          group: '{{ service_group }}'
+        when:
+          (loris_download_cache_from_tar_gz is defined) and
+          (loris_download_cache_from_tar_gz != '')
+
+      - name: aws | unarchive cache images tar.gz
+        unarchive:
+          src: '{{ service_cache_dir }}/{{ loris_download_cache_from_tar_gz | basename }}'
+          dest: '{{ service_cache_dir }}'
+          owner: '{{ service_user }}'
+          group: '{{ service_group }}'
+          remote_src: yes
+        when:
+          (loris_download_cache_from_tar_gz is defined) and
+          (loris_download_cache_from_tar_gz != '')
 
 

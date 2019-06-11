@@ -43,42 +43,25 @@ service_user: '{{ service_name }}'
 service_group: '{{ service_name }}'
 
 
-# optional var `loris_resolver`
-# you can configure either S3 or FS resolvers; if none defined here,
-# the default is FS resolver. If defining both, S3 takes precedence.
-#
-# `s3bucket_map` maps an url prefix to a s3bucket and optional key prefix
-# to build the s3 object id for a requested image. For the example below, the
-# request for http://loris.org/my_url_prefix/image.jpg/full/128,/0/default.jpg
-# will map to s3 object s3://my-s3-bucketname/loris/images/image.jpg
-#
-# hxloris s3resolver supports multiple s3buckets
-# for details, see https://github.com/nmaekawa/hxloris
-#
-#
-# when using a FSResolver, you can pre-populate the image source dir:
-# playbooks can copy source images from a local tar.gz or s3sync from a s3 bucket.
-# Below configure one or the other; if both configured, tar.gz wins!
-#
-# for the example below, when configuring an s3 bucket as image source, the s3
-# sync will download from s3://my-s3-bucketname/loris/images/*
-#
-#loris_resolver:
-#  s3:
-#    resolver_impl: 'must.be.an.s3resolver.Implementation'
-#    s3bucket_map:
-#      my_url_prefix:
-#        bucket: 'my-s3-bucketname'
-#        key_prefix: 'loris/images'
-#      other_url_prefix:
-#        bucket: 'other-bucketname'
-#        key_prefix: 'loris/other-images'
-#  fs:
-#    download_source:
-#      from_tar_gz_path: "/local/path/to/image_sample.tar.gz"
-#      from_s3:
-#        bucket: 'my-s3-bucketname'
-#        key_prefix: 'loris/images'
+# to have loris use s3resolver (hxloris.s3resolver.S3Resolver), instead of the
+# default FSResorver, define `loris_s3_resolver` with the s3bucket_map as
+# explained in hxloris readme: https://github.com/nmaekawa/hxloris
+#loris_s3_resolver:
+#  resolver_impl: 'hxloris.s3resolver.S3Resolver'
+#  s3bucket_map: "{{ lookup('env', 'LORIS_S3BUCKET_MAP') | mandatory }}"
+
+# it is also possible to configure a step to pre-populate  the image source
+# dir: the playbooks can copy image source files from a local tar.gz file, or
+# do an s3 sync with an s3 bucket.
+#loris_download_source_from_s3: "{{ lookup('env', 'LORIS_DOWNLOAD_SOURCE_FROM_S3') }}"
+#loris_download_source_from_tar_gz: "{{ lookup('env', 'LORIS_DOWNLOAD_SOURCE_FROM_TAR_GZ') }}"
+
+# the same goes for the loris cache processed images
+#loris_download_cache_from_s3: "{{ lookup('env', 'LORIS_DOWNLOAD_CACHE_FROM_S3') }}"
+#loris_download_cache_from_tar_gz: "{{ lookup('env', 'LORIS_DOWNLOAD_CACHE_FROM_TAR_GZ') }}"
+
+# if using s3, and NOT in the `us-east-1` define below:
+#aws_region: "{{ lookup('env', 'AWS_DEFAULT_REGION') }}"
 
 
 # check in cloudformation for the device name
@@ -117,7 +100,6 @@ service_dirs_to_create:
 # for nmaekawa.apt
 apt_required_packages:
     - 'python3-pip'
-      #- 'python3-dev'
     - 'python3-setuptools'
     - 'libjpeg-turbo8-dev'
     - 'libfreetype6-dev'
@@ -128,21 +110,6 @@ apt_required_packages:
     - 'supervisor'
     - 'zlib1g-dev'
 
-
-# get bucket_map from enivronment when s3resolver
-default_s3bucket_map: '{"s3bucket": {"bucket": "my-s3-bucket", "key_prefix": "loris/images"}}'
-s3bucket_map: "{{ lookup('env', 'LORIS_S3BUCKET_MAP') | default(default_s3bucket_map, true) }}"
-default_download_from_s3: '{"bucket": "my-s3-bucket", "key_prefix": "loris/images", "cache_key_prefix": "loris/cache"}'
-#loris_download_from_s3: "{{ lookup('env', 'LORIS_DOWNLOAD_FROM_S3') | default(default_download_from_s3) }}"
-loris_download_from_s3: "{{ lookup('env', 'LORIS_DOWNLOAD_FROM_S3') | from_json  }}"
-loris_resolver:
-#  s3:
-#    resolver_impl: 'hxloris.s3resolver.S3Resolver'
-#    s3bucket_map: "{{ s3bucket_map }}"
-  fs:
-    download_source:
-#      from_tar_gz_path: '/Volumes/Projects/Dev_Team/images/images_prod_20180824.tar.gz'
-      from_s3: "{{ loris_download_from_s3 }}"
 
 # how gunicorn exposes access to loris-hx
 # hack for vagrant, didn't figure why 2 ip addr

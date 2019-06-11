@@ -57,12 +57,12 @@ log_level = '{{ service_log_level | default("DEBUG", true) }}' # 'DEBUG'|'INFO'|
 #max_backups = 5
 format = '%(asctime)s (%(name)s) [%(levelname)s]: %(message)s'
 
-{% if loris_resolver is defined and 's3' in loris_resolver %}
+{% if loris_s3_resolver is defined and loris_s3_resolver != '' %}
 [resolver]
-impl = '{{ loris_resolver.s3.resolver_impl }}'
+impl = '{{ loris_s3_resolver.resolver_impl }}'
 cache_root = '{{ service_images_dir }}'
 [[bucket_map]]
-{% for item_name, item_value in loris_resolver.s3.s3bucket_map.items() %}
+{% for item_name, item_value in loris_s3_resolver.s3bucket_map.items() %}
   [[[{{ item_name }}]]]
   {% for cfg_name, cfg_value in item_value.items() %}
     {{ cfg_name }} = '{{ cfg_value }}'

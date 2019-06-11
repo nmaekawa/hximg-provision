@@ -16,6 +16,11 @@ echo "`date`: Starting $NAME as `whoami`"
 # activate venv
 . {{ service_venv_dir }}/bin/activate
 
+{% if aws_region is defined %}
+# loris uses boto3 and we need to specify region to access s3
+export AWS_DEFAULT_REGION='{{ aws_region }}'
+{% endif %}
+
 # run under supervisor so do not use --daemon
 exec gunicorn \
     --name $NAME \

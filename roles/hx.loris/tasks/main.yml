@@ -10,18 +10,8 @@
     - include_tasks: roles/hx.loris/tasks/install_loris.yml
     - include_tasks: roles/hx.loris/tasks/setup_gunicorn.yml
 
-    # check if aws credentials available (~/.aws/loris-creds
-    - include_tasks: roles/hx.loris/tasks/aws_creds.yml
-
     - name: restart service
       supervisorctl:
           name: '{{ service_name }}'
           state: restarted
-
-    - include_tasks: roles/hx.loris/tasks/copy_images.yml
-      when:
-        ( loris_resolver is defined ) and
-        ( 'fs' in loris_resolver ) and
-        ( 'download_source' in loris_resolver.fs ) and
-        ( 'from_tar_gz_path' in loris_resolver.fs.download_source )
 
