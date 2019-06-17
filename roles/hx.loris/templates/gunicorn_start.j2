@@ -17,7 +17,7 @@ echo "`date`: Starting $NAME as `whoami`"
 . {{ service_venv_dir }}/bin/activate
 
 {% if aws_region is defined %}
-# loris uses boto3 and we need to specify region to access s3
+# hxloris s3resolver uses boto3 and we need to specify region to access s3
 export AWS_DEFAULT_REGION='{{ aws_region }}'
 {% endif %}
 

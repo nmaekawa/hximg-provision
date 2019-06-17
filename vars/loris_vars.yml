@@ -54,7 +54,7 @@ service_group: '{{ service_name }}'
 # dir: the playbooks can copy image source files from a local tar.gz file, or
 # do an s3 sync with an s3 bucket.
 #loris_download_source_from_s3: "{{ lookup('env', 'LORIS_DOWNLOAD_SOURCE_FROM_S3') }}"
-#loris_download_source_from_tar_gz: "{{ lookup('env', 'LORIS_DOWNLOAD_SOURCE_FROM_TAR_GZ') }}"
+loris_download_source_from_tar_gz: "{{ lookup('env', 'LORIS_DOWNLOAD_SOURCE_FROM_TAR_GZ') }}"
 
 # the same goes for the loris cache processed images
 #loris_download_cache_from_s3: "{{ lookup('env', 'LORIS_DOWNLOAD_CACHE_FROM_S3') }}"
@@ -98,7 +98,7 @@ service_dirs_to_create:
 
 
 # for nmaekawa.apt
-apt_required_packages:
+apt_required_packages_loris:
     - 'python3-pip'
     - 'python3-setuptools'
     - 'libjpeg-turbo8-dev'

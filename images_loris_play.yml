@@ -18,6 +18,8 @@
     - name: loris | install required os packages for loris
       include_role:
         name: external/nmaekawa.apt
+      vars:
+        apt_other_packages: "{{ apt_required_packages_loris }}"
 
     - name: loris | create user for loris
       include_role:
@@ -112,6 +114,7 @@
 # install log/metrics scripts, syslog to s3, put-metrics to cloudwatch
 # this playbook only applied if ec2_tag_cluster == "prod"
 - import_playbook: cloudwatch_scripts_play.yml
+  when: ec2_tag_cluster == 'prod'
 
 
 # initial copy of source images to loris local filesys
@@ -146,6 +149,7 @@
           (loris_download_source_from_s3 is defined) and
           (loris_download_source_from_s3 != '')
 
+      # initial s3 sync of loris source images
       - name: aws | run initial s3 sync for images
         become: yes
         become_user: '{{ service_user }}'
@@ -159,30 +163,20 @@
           (loris_download_source_from_s3 != '')
 
 
-      # download loris image from tar.gz files
-      - name: aws | transfer sample images tar.gz
-        copy:
+      # untar source images from local file
+      - name: aws | unarchive sample images tar.gz
+        unarchive:
           src: '{{ loris_download_source_from_tar_gz }}'
           dest: '{{ service_images_dir }}'
           owner: '{{ service_user }}'
           group: '{{ service_group }}'
-        when:
-          (loris_download_source_from_tar_gz is defined) and
-          (loris_download_source_from_tar_gz != '')
-
-      - name: aws | unarchive sample images tar.gz
-        unarchive:
-          src: '{{ service_images_dir }}/{{ loris_download_source_from_tar_gz | basename }}'
-          dest: '{{ service_images_dir }}'
-          owner: '{{ service_user }}'
-          group: '{{ service_group }}'
-          remote_src: yes
+          remote_src: no
         when:
           (loris_download_source_from_tar_gz is defined) and
           (loris_download_source_from_tar_gz != '')
 
 
-      # download loris cache of processed images
+      # initial s3 sync of cache of processed images
       - name: aws | run initial s3 sync for loris cache
         become: yes
         become_user: '{{ service_user }}'
@@ -196,24 +190,16 @@
           (loris_download_cache_from_s3 != '')
 
 
-      # download loris cache from tar.gz files
-      - name: aws | transfer cache images tar.gz
-        copy:
-          src: '{{ loris_resolver_download_cache_from_tar_gz }}'
-          dest: '{{ service_cache_dir }}'
-          owner: '{{ service_user }}'
-          group: '{{ service_group }}'
-        when:
-          (loris_download_cache_from_tar_gz is defined) and
-          (loris_download_cache_from_tar_gz != '')
-
+      # untar cache of processed images from local file
       - name: aws | unarchive cache images tar.gz
         unarchive:
-          src: '{{ service_cache_dir }}/{{ loris_download_cache_from_tar_gz | basename }}'
+          src: '{{ loris_download_cache_from_tar_gz }}'
           dest: '{{ service_cache_dir }}'
           owner: '{{ service_user }}'
           group: '{{ service_group }}'
-          remote_src: yes
+          remote_src: no
+        vars:
+          loris_download_cache_from_tar_gz: '{{ lookup("env", "LORIS_IDS_DOWNLOAD_CACHE_FROM_TAR_GZ") }}'
         when:
           (loris_download_cache_from_tar_gz is defined) and
           (loris_download_cache_from_tar_gz != '')
