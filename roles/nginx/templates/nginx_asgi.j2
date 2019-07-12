@@ -1,0 +1,39 @@
+
+{% extends "strict_ssl_base.j2" %}
+
+
+{% block custom_location %}
+
+    location /ws/ {
+        try_files $uri @proxy_to_asgi;
+    }
+
+    location @proxy_to_asgi {
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_redirect off;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Host $server_name;
+        proxy_set_header Host $host;
+        proxy_pass http://{{ service_asgi_host }}:{{ service_asgi_port }};
+    }
+
+    location / {
+        try_files $uri @proxy_to_app;
+    }
+
+    location @proxy_to_app {
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Host $http_host;
+        proxy_read_timeout {{ gunicorn_timeout_seconds }};
+        proxy_connect_timeout {{ gunicorn_timeout_seconds }};
+        proxy_pass http://{{ service_gunicorn_host }}:{{ service_gunicorn_port }};
+    }
+
+{% endblock %}

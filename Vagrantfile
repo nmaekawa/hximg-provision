@@ -163,4 +163,19 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         v.memory = "4096"
     end
   end
+
+  # sock node
+  config.vm.define "sock" do |sock|
+    #sock.vm.box = "bento/ubuntu-18.04"
+    sock.vm.box = "ubuntu/bionic64"
+    sock.vm.hostname = "sock.vm"
+    sock.vm.network "private_network", ip: "10.33.0.10"
+
+    sock.ssh.forward_agent = true
+    sock.ssh.insert_key = false
+
+    sock.vm.provider "virtualbox" do |v|
+        v.memory = "4096"
+    end
+  end
 end

@@ -1,0 +1,20 @@
+[fcgi-program:{{ service_asgi_name }}]
+socket = tcp://{{ service_asgi_host }}:{{ service_asgi_port }}
+
+directory = {{ service_install_dir }}
+user = {{ service_name }}
+
+numprocs = 2
+process_name = {{ service_asgi_name }}%(process_num)d
+
+autostart = true
+autorestar = true
+
+stdout_logfile = syslog
+redirect_stderr = true
+
+environment = {{ service_name | upper }}_DOTENV_PATH="{{ service_dotenv_path }}"
+command = {{ service_venv_dir }}/bin/daphne -u {{ service_asgi_unix_socket_dir }}/daphne%(process_num)d.sock --fd 0 --access-log - --proxy-headers {{ service_name }}.asgi:application
+
+
+

@@ -2,12 +2,14 @@
 # beware that the correct dotenv path must be configured in the environment
 # prior to calling this play!
 
+
     - name: django_manage | apply migrations
       become_user: '{{ service_user }}'
       environment:
           HXMIRADOR_DOTENV_PATH: '{{ service_dotenv_path }}'
           CATCHPY_DOTENV_PATH: '{{ service_dotenv_path }}'
           HXAT_DOTENV_PATH: '{{ service_dotenv_path }}'
+          SOCK_DOTENV_PATH: '{{ service_dotenv_path }}'
 
       django_manage:
           command: migrate
@@ -22,6 +24,7 @@
           HXMIRADOR_DOTENV_PATH: '{{ service_dotenv_path }}'
           CATCHPY_DOTENV_PATH: '{{ service_dotenv_path }}'
           HXAT_DOTENV_PATH: '{{ service_dotenv_path }}'
+          SOCK_DOTENV_PATH: '{{ service_dotenv_path }}'
 
       django_manage:
           command: collectstatic

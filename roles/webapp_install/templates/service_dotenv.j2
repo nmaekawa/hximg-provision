@@ -22,4 +22,7 @@ CATCHPY_ALLOWED_HOSTS="{{ webserver_dns }}"
 ALLOWED_HOSTS="{{ webserver_dns }}"
 {% endif %}
 
+{% if webserver_dns is defined and service_name == 'sock' %}
+SOCK_ALLOWED_HOSTS="{{ webserver_dns }}"
+{% endif %}
 
