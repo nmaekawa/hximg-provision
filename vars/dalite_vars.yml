@@ -1,0 +1,17 @@
+---
+
+# dalite VARS
+# ----------------------------------------------------------------------------------
+
+# for Stouts.users
+users_enabled: yes
+users_to_install:
+    - 'nmaekawa'
+    - 'lduarte'
+
+# special case for vagrant
+vagrant_webserver_dns: '{{ inventory_hostname }}'
+
+
+
+

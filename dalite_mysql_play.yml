@@ -1,0 +1,19 @@
+---
+
+
+- import_playbook: common_play.yml
+
+- hosts: '{{ target_hosts | default("all", true) }}'
+  remote_user: "{{ my_remote_user }}"
+  become: yes
+  become_user: root
+  vars_files:
+      - vars/common_vars.yml
+      - vars/dalite_vars.yml
+
+  tasks:
+    - name: install mysql
+      apt:
+        name: ['mysql-server', 'mysql-client']
+        state: present
+
