@@ -163,4 +163,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         v.memory = "4096"
     end
   end
+
+  # playaway node
+  config.vm.define "playaway" do |playaway|
+    playaway.vm.box = DEFAULT_VB
+    playaway.vm.hostname = "playaway.vm"
+    playaway.vm.network "private_network", ip: "10.222.0.10"
+
+    playaway.ssh.forward_agent = true
+    playaway.ssh.insert_key = false
+
+    playaway.vm.provider "virtualbox" do |v|
+        v.memory = "4096"
+    end
+  end
 end
