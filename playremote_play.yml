@@ -8,9 +8,13 @@
   become: yes
   become_user: root
   vars:
-      local_user:
-          name: '{{ service_name }}'
-          authorized: []
+    local_users:
+      - name: '{{ service_name }}'
+        authorized: []
+      - name: dpmccabe
+        groups: ['sudo']
+        authorized:
+          - https://github.com/dpmccabe.keys
   vars_files:
       - vars/common_vars.yml
       - vars/playremote_vars.yml
@@ -24,7 +28,7 @@
       - include_role:
           name: external/Stouts.users
         vars:
-          users_users: '{{ [local_user] }}'
+          users_users: '{{ local_users }}'
 
 
 - hosts: '{{ target_hosts | default("tag_service_playremote", true) }}'
@@ -37,7 +41,7 @@
     - include_tasks: handlers/main.yml
 
   tasks:
-      - name: install webapp
+    - name: install webapp
         include_role:
             name: webapp_install
 
@@ -54,19 +58,19 @@
             nginx_template_path: roles/nginx/templates/nginx_playremote.j2
 
 
-- hosts: '{{ target_hosts | default("tag_service_playremote", true) }}'
-  remote_user: "{{ my_remote_user }}"
-  become: yes
-  vars_files:
-      - vars/common_vars.yml
-      - vars/playremote_vars.yml
-  handlers:
-    - include_tasks: handlers/main.yml
-
-  tasks:
-      - name: install redis
-        include_role:
-            name: external/geerlingguy.redis
+#- hosts: '{{ target_hosts | default("tag_service_playremote", true) }}'
+#  remote_user: "{{ my_remote_user }}"
+#  become: yes
+#  vars_files:
+#      - vars/common_vars.yml
+#      - vars/playremote_vars.yml
+#  handlers:
+#    - include_tasks: handlers/main.yml
+#
+#  tasks:
+#      - name: install redis
+#        include_role:
+#            name: external/geerlingguy.redis
 
 
   # install log/metrics scripts, syslog to s3, put-metrics to cloudwatch
