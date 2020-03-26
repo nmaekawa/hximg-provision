@@ -191,4 +191,19 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         v.memory = "4096"
     end
   end
+
+  # socializeremotely node
+  config.vm.define "socializeremotely" do |socializeremotely|
+    socializeremotely.vm.box = DEFAULT_VB
+    socializeremotely.vm.hostname = "socializeremotely.vm"
+    socializeremotely.vm.network "private_network", ip: "10.222.0.20"
+
+    socializeremotely.ssh.forward_agent = true
+    socializeremotely.ssh.insert_key = false
+
+    socializeremotely.vm.provider "virtualbox" do |v|
+        v.memory = "4096"
+    end
+  end
+
 end

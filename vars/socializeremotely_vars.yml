@@ -1,0 +1,86 @@
+---
+
+# SOCIALIZEREMOTELY VARS
+# ----------------------------------------------------------------------------------
+
+# service vars
+service_name: "socializeremotely"
+service_user: "{{ service_name }}"
+service_group: "{{ service_name }}"
+
+# check in cloudformation for the device name
+ebs_device: /dev/xvdf
+ebs_mountpoint: /opt/hx
+
+rootdir: "{{ ebs_mountpoint }}"
+service_rootdir: "{{ rootdir }}/{{ service_name }}"
+service_venv_dir: "{{ service_rootdir }}/venv"
+# uncomment, otherwise default is debug: # 'DEBUG'|'INFO'|'WARNING'|'ERROR'|'CRITICAL'
+# service_log_level: "DEBUG"
+
+service_install_dir: "{{ service_rootdir }}/{{ service_name }}"
+service_static_dir: "{{ service_rootdir }}/www"
+service_django_static_dir: "{{ service_static_dir }}/static"
+service_config_dir: "{{ service_rootdir }}/conf"
+service_bin_dir: "{{ service_rootdir }}/bin"
+service_data_dir: "{{ service_rootdir }}/data"
+
+#service_git_repo: "https://github.com/harvard-vpal/socialize-remotely-nuxt"
+service_git_repo: "git@github.com:harvard-vpal/socialize-remotely-nuxt.git"
+service_git_revision: "{{ lookup('env', 'SOCIALZEREMOTELY_GIT_REVISION') | default('master', true) }}"
+
+# easier to create dirs with this dict
+service_dirs_to_create:
+    - "{{ service_rootdir }}"
+    - "{{ service_config_dir }}"
+    - "{{ service_data_dir }}"
+    - "{{ service_bin_dir }}"
+    - "{{ service_static_dir }}"
+    - "{{ service_django_static_dir }}"
+
+# specific to webapp_install role
+service_dotenv_path: "{{ service_config_dir }}/{{ service_name }}.env"
+
+# django admin user to be created
+# beware that api_url port must match the one for playremote
+service_environment:
+  API_PREFIX: "/api/"
+  API_URL: "https://{{ service_name}}.{{ org_public_domain }}:4443/"
+  BASE_URL: "https://{{ service_name}}.{{ org_public_domain }}"
+  DEV_EPPN: "test@{{ org_public_domain }}"
+  DEPLOY_ENV: "production"
+  PORT: "443"
+  SERVICE_URL: "https://{{ service_name}}.{{ org_public_domain }}/login"
+  SKIP_AUTH: "false"
+  USE_SSL: "true"
+  NODE_ENV: "production"
+
+
+# for Stouts.users
+users_enabled: yes
+users_to_install:
+    - 'nmaekawa'
+    - 'lduarte'
+    - '{{ service_user }}'
+
+# for nmaekawa.apt
+apt_required_packages_socializeremotely:
+    - gcc
+    - g++
+    - make
+    - build-essential
+
+
+# PROXY VARS
+# ----------------------------------------------------------------------------------
+
+enable_ssl: '{{ ec2_tag_cluster != "vagrant" }}'
+static_dir: '{{ service_static_dir }}'
+nginx_ssl_dest_dir: '/etc/ssl/certs'
+cert_dns: 'socializeremotely'  # this name must match pattern for ssl cert names
+# special case for vagrant
+vagrant_webserver_dns: '{{ inventory_hostname }}'
+
+
+
+

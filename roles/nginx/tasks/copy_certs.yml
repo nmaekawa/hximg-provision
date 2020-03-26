@@ -1,0 +1,38 @@
+---
+#
+# copy certs for expressjs app to use
+# specific to playremote (or socializeremotely) project
+#
+
+    - name: socialize | compose the cert filename
+      set_fact:
+          cert_partial_filename: "{{ (ec2_tag_cluster == 'prod') | ternary('', 'all_') }}{{ cert_dns }}_{{ org_public_domain | replace('.', '_') }}"
+      when: cert_partial_filename is not defined
+
+    - name: socialize | copy ssl root cert dir to service host
+      copy:
+        src: "{{ local_certs_dir }}/{{ cert_dns }}/{{ cert_partial_filename }}.crt"
+        dest: "{{ nginx_ssl_dest_dir }}/{{ cert_partial_filename }}.crt"
+        mode: 0644
+      when: enable_ssl
+
+    - name: socialize | copy ssl private_key to service host
+      copy:
+        src: "{{ local_certs_dir }}/{{ cert_dns }}/{{ cert_partial_filename }}.key"
+        dest: "{{ nginx_ssl_dest_dir }}/{{ cert_partial_filename }}.key"
+        mode: 0600
+      when: enable_ssl
+
+    - name: socialize | link ssl root cert to correct file
+      file:
+        src: "{{ nginx_ssl_dest_dir }}/{{ cert_partial_filename }}.crt"
+        dest: "{{ service_install_dir }}/{{ cert_dns }}.crt"
+        state: link
+      when: enable_ssl
+
+    - name: socialize | link ssl KEY to correct file
+      file:
+        src: "{{ nginx_ssl_dest_dir }}/{{ cert_partial_filename }}.key"
+        dest: "{{ service_install_dir }}/{{ cert_dns }}.key"
+        state: link
+      when: enable_ssl

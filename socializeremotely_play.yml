@@ -1,0 +1,144 @@
+---
+#
+# assumes common_play.yml already applied to all involved inventory
+#
+
+- hosts: '{{ target_hosts | default("tag_service_socializeremotely", true) }}'
+  remote_user: "{{ my_remote_user }}"
+  become: yes
+  become_user: root
+  vars:
+    local_users:
+      - name: dpmccabe
+        groups: ['sudo']
+        authorized:
+          - https://github.com/dpmccabe.keys
+      - name: '{{ service_name }}'
+        authorized: []
+
+  vars_files:
+    - vars/common_vars.yml
+    - vars/socializeremotely_vars.yml
+
+  tasks:
+    - include_role:
+        name: external/nmaekawa.apt
+      vars:
+        apt_other_packages: "{{ apt_required_packages_socializeremotely }}"
+
+    - include_role:
+        name: external/Stouts.users
+      vars:
+        users_users: '{{ local_users }}'
+
+    - name: setup to install node from NodeSource
+      shell: 'curl -sL https://deb.nodesource.com/setup_13.x | sudo -E bash -'
+
+    - name: install node from NodeSource
+      apt:
+        name: nodejs
+        state: present
+
+    - name: install pm2 process manager
+      npm:
+        name: pm2
+        global: yes
+        state: latest
+
+
+
+- hosts: '{{ target_hosts | default("tag_service_socializeremotely", true) }}'
+  remote_user: "{{ my_remote_user }}"
+  become: yes
+  become_user: root
+  vars_files:
+      - vars/common_vars.yml
+      - vars/socializeremotely_vars.yml
+  handlers:
+    - include_tasks: handlers/main.yml
+
+  tasks:
+    - name: create dirs
+      include_tasks: 'roles/webapp_install/tasks/create_dirs.yml'
+
+    - name: create .ssh dir
+      file:
+        path: '/home/{{ service_user }}/.ssh'
+        owner: '{{ service_user }}'
+        group: '{{ service_group }}'
+        mode: '0700'
+        state: directory
+
+    - name: add private key for service user
+      copy:
+        src: '{{ local_certs_dir }}/{{ cert_dns }}/{{ service_name }}_deploy'
+        dest: '/home/{{ service_user }}/.ssh/id_rsa'
+        owner: '{{ service_user }}'
+        group: '{{ service_group }}'
+        mode: '0600'
+
+    - name:  clone service repo with deploy key
+      become_user: '{{ service_user }}'
+      git:
+          repo: '{{ service_git_repo }}'
+          update: yes
+          clone: yes
+          force: yes
+          version: '{{ service_git_revision }}'
+          dest: '{{ service_install_dir }}'
+          key_file: '/home/{{ service_user }}/.ssh/id_rsa'
+
+    - name: install service dependencies
+      become_user: '{{ service_user }}'
+      npm:
+        path: '{{ service_install_dir }}/{{ service_name }}'
+        state: present
+
+    - name: copy and link certs for express app
+      include_tasks: 'roles/nginx/tasks/copy_certs.yml'
+
+    - name: config | drop .env file
+      become_user: "{{ service_user }}"
+      template:
+        src: 'roles/webapp_install/templates/service_dotenv.j2'
+        dest: "{{ service_dotenv_path }}"
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
+        mode: 0744
+        backup: yes
+
+    - name: build nuxt distribution
+      shell: '(source {{ service_config_dir }}/{{ service_name }}.env; npm run build)'
+      args:
+        chdir: '{{ service_install_dir }}'
+
+    #- name: pm2 config
+
+
+  # install log/metrics scripts, syslog to s3, put-metrics to cloudwatch
+- import_playbook: cloudwatch_scripts_play.yml
+  when: ec2_tag_cluster == 'prod'
+
+- hosts: '{{ target_hosts | default("tag_service_socializeremotely", true) }}'
+  remote_user: "{{ my_remote_user }}"
+  become: yes
+  become_user: root
+  vars:
+    project_name: '{{ hostvars[inventory_hostname].ec2_tag_project | mandatory}}'
+    service_role: '{{ hostvars[inventory_hostname].ec2_tag_service | mandatory}}'
+    cluster_env: '{{ (hostvars[inventory_hostname].ec2_tag_cluster == "prod")| ternary("prod", "devo") }}'
+    cloudwatch_namespace: '{{ cloudwatch_namespace_prefix }}/{{ project_name }}'
+  vars_files:
+    - vars/common_vars.yml
+    - vars/socializeremotely_vars.yml
+
+  tasks:
+    - import_tasks: roles/external/nmaekawa.cloudwatch/tasks/install_backup_cronjob.yml
+      vars:
+        cronjob_owner: root
+        s3_backup_prefix: '{{ cluster_env }}/{{ project_name }}'
+        file_backup_prefix: '{{ service_role }}_{{ ansible_ec2_instance_id }}'
+        files_to_backup:
+          - '{{ service_db_path }}'
+      when: ec2_tag_cluster == 'prod'
+
