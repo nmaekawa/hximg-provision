@@ -31,4 +31,11 @@ ALLOWED_HOSTS="{{ webserver_dns }}"
 PLAYREMOTE_ALLOWED_HOSTS="{{ webserver_dns }}"
 {% endif %}
 
+{% if service_name == 'playremote' or service_name == 'socializeremotely' %}
+if [ ! -f ./hxjwt_private ]
+then
+    uuidgen > {{ rootdir }}/shared/{{ hxjwt_shared }}/{{ hxjwt_shared }}_private
+fi
+export HXJWT_PRIVATE=$(cat {{ rootdir }}/shared/{{ hxjwt_shared }}/{{ hxjwt_shared }}_private)
 
+{% endif %}

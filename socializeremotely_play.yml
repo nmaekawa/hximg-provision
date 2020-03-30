@@ -14,6 +14,7 @@
         authorized:
           - https://github.com/dpmccabe.keys
       - name: '{{ service_name }}'
+        groups: ['{{ hxjwt_shared }}']
         authorized: []
 
   vars_files:
@@ -26,10 +27,26 @@
       vars:
         apt_other_packages: "{{ apt_required_packages_socializeremotely }}"
 
+    - name: create shared group for playremote and socializeremotely
+      group:
+        name: "{{ hxjwt_shared }}"
+
     - include_role:
         name: external/Stouts.users
       vars:
         users_users: '{{ local_users }}'
+
+    - include_role:
+        name: external/nmaekawa.extra-ebs
+      when: use_aws
+
+    - name: create hxjwt shared dir
+      file:
+        path: '{{ rootdir }}/shared/{{ hxjwt_shared }}'
+        owner: '{{ service_user }}'
+        group: '{{ hxjwt_shared }}'
+        mode: '0770'
+        state: directory
 
     - name: setup to install node from NodeSource
       shell: 'curl -sL https://deb.nodesource.com/setup_13.x | sudo -E bash -'
@@ -44,7 +61,6 @@
         name: pm2
         global: yes
         state: latest
-
 
 
 - hosts: '{{ target_hosts | default("tag_service_socializeremotely", true) }}'
@@ -87,6 +103,7 @@
           version: '{{ service_git_revision }}'
           dest: '{{ service_install_dir }}'
           key_file: '/home/{{ service_user }}/.ssh/id_rsa'
+          accept_hostkey: yes
 
     - name: install service dependencies
       become_user: '{{ service_user }}'
@@ -97,14 +114,24 @@
     - name: copy and link certs for express app
       include_tasks: 'roles/nginx/tasks/copy_certs.yml'
 
-    - name: config | drop .env file
-      become_user: "{{ service_user }}"
+    - name: config | drop shell wrapper file
+      become_user: '{{ service_user }}'
       template:
-        src: 'roles/webapp_install/templates/service_dotenv.j2'
-        dest: "{{ service_dotenv_path }}"
-        owner: "{{ service_user }}"
-        group: "{{ service_group }}"
-        mode: 0744
+        src: 'roles/webapp_install/templates/socializeremotely.sh.j2'
+        dest: '{{ service_install_dir }}'
+        owner: '{{ service_user }}'
+        group: '{{ service_group }}'
+        mode: 0640
+        backup: yes
+
+    - name: config | drop pm2 ecosystem file
+      become_user: '{{ service_user }}'
+      template:
+        src: 'roles/webapp_install/templates/ecosystem.config.js.j2'
+        dest: '{{ service_install_dir }}'
+        owner: '{{ service_user }}'
+        group: '{{ service_group }}'
+        mode: 0640
         backup: yes
 
     - name: build nuxt distribution
@@ -112,7 +139,12 @@
       args:
         chdir: '{{ service_install_dir }}'
 
-    #- name: pm2 config
+    - name: pm2 start node app
+      shell: 'pm2 {{ service_install_dir }}/ecosystem.config.js'
+
+    - name: pm2 register as systemd service
+      shell: 'pm2 startup systemd'
+      # shell: 'env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u socializeremotely --hp /home/socializeremotely'
 
 
   # install log/metrics scripts, syslog to s3, put-metrics to cloudwatch

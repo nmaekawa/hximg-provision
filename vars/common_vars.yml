@@ -35,7 +35,7 @@ users_ssh_keys: '{{ users_users }}'
 
 
 # certificates mount point
-local_certs_dir: '{{ lookup("env", "LOCAL_CERTS_DIR") | default("/Volumes/magic_numbers/certs", true) }}'
+local_certs_dir: '{{ lookup("env", "LOCAL_CERTS_DIR") | default("../hx-certs", true) }}'
 
 
 # webserver dns used for django apps, hx varnish, and nginx configs
@@ -68,3 +68,7 @@ default_cronjob_scripts_dir: /usr/local/bin
 
 # django-app might have different name from default, service_name
 wsgi_module: '{{ service_name }}'
+
+# playremote/socializeremotely shared group
+hxjwt_shared: 'hxjwt'
+

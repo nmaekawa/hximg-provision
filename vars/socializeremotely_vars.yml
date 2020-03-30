@@ -25,7 +25,6 @@ service_config_dir: "{{ service_rootdir }}/conf"
 service_bin_dir: "{{ service_rootdir }}/bin"
 service_data_dir: "{{ service_rootdir }}/data"
 
-#service_git_repo: "https://github.com/harvard-vpal/socialize-remotely-nuxt"
 service_git_repo: "git@github.com:harvard-vpal/socialize-remotely-nuxt.git"
 service_git_revision: "{{ lookup('env', 'SOCIALZEREMOTELY_GIT_REVISION') | default('master', true) }}"
 
