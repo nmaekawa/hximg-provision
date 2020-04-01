@@ -1,6 +1,6 @@
 ---
 #
-# assumes common_play.yml already applied to all involved inventory
+# assumes common_play.yml AND playremote_play.yml already applied to all involved inventory
 #
 
 - hosts: '{{ target_hosts | default("tag_service_socializeremotely", true) }}'
@@ -27,9 +27,9 @@
       vars:
         apt_other_packages: "{{ apt_required_packages_socializeremotely }}"
 
-    - name: create shared group for playremote and socializeremotely
-      group:
-        name: "{{ hxjwt_shared }}"
+      #- name: create shared group for playremote and socializeremotely
+      # group:
+      #name: "{{ hxjwt_shared }}"
 
     - include_role:
         name: external/Stouts.users
@@ -40,13 +40,29 @@
         name: external/nmaekawa.extra-ebs
       when: use_aws
 
-    - name: create hxjwt shared dir
-      file:
-        path: '{{ rootdir }}/shared/{{ hxjwt_shared }}'
-        owner: '{{ service_user }}'
-        group: '{{ hxjwt_shared }}'
-        mode: '0770'
-        state: directory
+      #- name: create hxjwt shared dir
+      #file:
+      #  path: '{{ hxjwt_shared_dir }}'
+      #  owner: '{{ service_user }}'
+      #  group: '{{ hxjwt_shared }}'
+      #  mode: '0770'
+      #  state: directory
+
+      #- name: query system for shared secret file
+      #stat:
+      #  path: '{{ hxjwt_shared_private_path }}'
+      #register: shared_result
+
+      #- name: create hxjwt shared secret
+      #shell: '/usr/bin/uuidgen > {{ hxjwt_shared_private_path }}'
+      #when: not shared_result.failed and not shared_result.stat.exists
+
+      #- name: set permissions for hxjwt shared secret
+      #file:
+      #  path: '{{ hxjwt_shared_private_path }}'
+      #  owner: '{{ service_user }}'
+      #  group: '{{ hxjwt_shared }}'
+      #  mode: '0660'
 
     - name: setup to install node from NodeSource
       shell: 'curl -sL https://deb.nodesource.com/setup_13.x | sudo -E bash -'
@@ -114,11 +130,31 @@
     - name: copy and link certs for express app
       include_tasks: 'roles/nginx/tasks/copy_certs.yml'
 
-    - name: config | drop shell wrapper file
-      become_user: '{{ service_user }}'
+      #- name: config | drop shell wrapper file
+      #become_user: '{{ service_user }}'
+      #template:
+      #  src: 'roles/webapp_install/templates/socializeremotely.sh.j2'
+      #  dest: '{{ service_install_dir }}/socializeremotely.sh'
+      #  owner: '{{ service_user }}'
+      #  group: '{{ service_group }}'
+      #  mode: 0640
+      #  backup: yes
+
+    - name: read shared secret
+      shell: 'cat {{ hxjwt_shared_private_path }}'
+      register: shared_secret_result
+
+    - debug:
+        var: shared_secret_result
+
+    - name: set shared secret in var
+      set_fact:
+          hxjwt_shared_secret: "{{ shared_secret_result.stdout }}"
+
+    - name: config | drop .env file for express app
       template:
-        src: 'roles/webapp_install/templates/socializeremotely.sh.j2'
-        dest: '{{ service_install_dir }}'
+        src: 'roles/webapp_install/templates/service_dotenv.j2'
+        dest: '{{ service_install_dir }}/.env'
         owner: '{{ service_user }}'
         group: '{{ service_group }}'
         mode: 0640
@@ -128,49 +164,23 @@
       become_user: '{{ service_user }}'
       template:
         src: 'roles/webapp_install/templates/ecosystem.config.js.j2'
-        dest: '{{ service_install_dir }}'
+        dest: '{{ service_install_dir }}/ecosystem.config.js'
         owner: '{{ service_user }}'
         group: '{{ service_group }}'
         mode: 0640
         backup: yes
 
     - name: build nuxt distribution
+      become_user: '{{ service_user }}'
       shell: '(source {{ service_config_dir }}/{{ service_name }}.env; npm run build)'
       args:
         chdir: '{{ service_install_dir }}'
 
     - name: pm2 start node app
-      shell: 'pm2 {{ service_install_dir }}/ecosystem.config.js'
+      shell: 'pm2 start {{ service_install_dir }}/ecosystem.config.js'
 
     - name: pm2 register as systemd service
       shell: 'pm2 startup systemd'
       # shell: 'env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u socializeremotely --hp /home/socializeremotely'
 
-
-  # install log/metrics scripts, syslog to s3, put-metrics to cloudwatch
-- import_playbook: cloudwatch_scripts_play.yml
-  when: ec2_tag_cluster == 'prod'
-
-- hosts: '{{ target_hosts | default("tag_service_socializeremotely", true) }}'
-  remote_user: "{{ my_remote_user }}"
-  become: yes
-  become_user: root
-  vars:
-    project_name: '{{ hostvars[inventory_hostname].ec2_tag_project | mandatory}}'
-    service_role: '{{ hostvars[inventory_hostname].ec2_tag_service | mandatory}}'
-    cluster_env: '{{ (hostvars[inventory_hostname].ec2_tag_cluster == "prod")| ternary("prod", "devo") }}'
-    cloudwatch_namespace: '{{ cloudwatch_namespace_prefix }}/{{ project_name }}'
-  vars_files:
-    - vars/common_vars.yml
-    - vars/socializeremotely_vars.yml
-
-  tasks:
-    - import_tasks: roles/external/nmaekawa.cloudwatch/tasks/install_backup_cronjob.yml
-      vars:
-        cronjob_owner: root
-        s3_backup_prefix: '{{ cluster_env }}/{{ project_name }}'
-        file_backup_prefix: '{{ service_role }}_{{ ansible_ec2_instance_id }}'
-        files_to_backup:
-          - '{{ service_db_path }}'
-      when: ec2_tag_cluster == 'prod'
 

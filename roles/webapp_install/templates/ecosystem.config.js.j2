@@ -1,8 +1,7 @@
 module.exports = {
   apps : [{
     name: 'soc-remote-nuxt',
-    script: './socializeremotely.sh',
-    interpreter: '/bin/bash',
+    script: './server/index.js',
     cwd: '{{ service_install_dir }}',
 
     // Options reference: https://pm2.keymetrics.io/docs/usage/application-declaration/

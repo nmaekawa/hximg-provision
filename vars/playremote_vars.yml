@@ -92,6 +92,8 @@ apt_required_packages_playremote:
 # ----------------------------------------------------------------------------------
 
 enable_ssl: '{{ ec2_tag_cluster != "vagrant" }}'
+nginx_ssl_port: "{{ lookup('env', 'PLAYREMOTE_SSL_PORT') | default('3443', true) }}"
+nginx_non_ssl_port: "{{ lookup('env', 'PLAYREMOTE_NON_SSL_PORT') | default('3080', true) }}"
 static_dir: '{{service_static_dir }}'
 nginx_ssl_dest_dir: '/etc/ssl/certs'
 cert_dns: 'socializeremotely'  # this name must match pattern for ssl cert names

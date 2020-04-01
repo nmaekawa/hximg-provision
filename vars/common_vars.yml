@@ -71,4 +71,6 @@ wsgi_module: '{{ service_name }}'
 
 # playremote/socializeremotely shared group
 hxjwt_shared: 'hxjwt'
+hxjwt_shared_dir: '{{ rootdir }}/shared/{{ hxjwt_shared }}'
+hxjwt_shared_private_path: '{{ hxjwt_shared_dir }}/{{ hxjwt_shared }}_private'
 

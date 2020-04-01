@@ -40,7 +40,6 @@ service_dirs_to_create:
 # specific to webapp_install role
 service_dotenv_path: "{{ service_config_dir }}/{{ service_name }}.env"
 
-# django admin user to be created
 # beware that api_url port must match the one for playremote
 service_environment:
   API_PREFIX: "/api/"
@@ -48,11 +47,11 @@ service_environment:
   BASE_URL: "https://{{ service_name}}.{{ org_public_domain }}"
   DEV_EPPN: "test@{{ org_public_domain }}"
   DEPLOY_ENV: "production"
+  HXJWT_PRIVATE: "{{ hxjwt_shared_secret }}"
   PORT: "443"
   SERVICE_URL: "https://{{ service_name}}.{{ org_public_domain }}/login"
   SKIP_AUTH: "false"
   USE_SSL: "true"
-  NODE_ENV: "production"
 
 
 # for Stouts.users
