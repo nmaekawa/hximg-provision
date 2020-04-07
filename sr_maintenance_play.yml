@@ -1,0 +1,39 @@
+---
+#
+# assumes common_play.yml already applied to all involved inventory
+#
+#- import_playbook: common_play.yml
+
+- hosts: '{{ target_hosts | default("tag_service_maintenance", true) }}'
+  remote_user: "{{ my_remote_user }}"
+  become: yes
+  vars_files:
+      - vars/common_vars.yml
+  handlers:
+    - include_tasks: handlers/main.yml
+
+  tasks:
+    - include_role:
+        name: external/nmaekawa.apt
+      vars:
+        apt_required_packages:
+          - 'nginx'
+
+    - name: config nginx
+      include_role:
+        name: nginx
+      vars:
+        service_name: sr_maintenance
+        enable_ssl: false
+        nginx_maintenance_port: 8080
+        static_dir: '/var/www/html'
+        nginx_template_path: roles/nginx/templates/nginx_sr_maintenance.j2
+
+    - name: copy static files to maintenance server
+      copy:
+        src: roles/nginx/files/sr_maintenance/
+        dest: '/var/www/html'
+        mode: 'o=r'
+
+
+

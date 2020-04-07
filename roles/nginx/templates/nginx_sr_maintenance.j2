@@ -1,0 +1,25 @@
+
+server {
+    listen {{ nginx_maintenance_port | default(80) }};
+
+    root {{ static_dir }};
+
+    {% block index_location %}
+    location = / {
+        index index.html;
+    }
+    {% endblock %}
+
+    {% block robots_location %}
+    location = /robots.txt {
+        allow all;
+        log_not_found off;
+        access_log off;
+    }
+    location = /favicon.ico {
+        log_not_found off;
+        access_log off;
+    }
+    {% endblock %}
+
+}
