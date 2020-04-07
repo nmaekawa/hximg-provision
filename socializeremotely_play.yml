@@ -27,42 +27,27 @@
       vars:
         apt_other_packages: "{{ apt_required_packages_socializeremotely }}"
 
-      #- name: create shared group for playremote and socializeremotely
-      # group:
-      #name: "{{ hxjwt_shared }}"
-
     - include_role:
         name: external/Stouts.users
       vars:
         users_users: '{{ local_users }}'
 
-    - include_role:
-        name: external/nmaekawa.extra-ebs
-      when: use_aws
+    - name: query system for shared secret file
+      stat:
+        path: '{{ hxjwt_shared_private_path }}'
+      register: shared_result
 
-      #- name: create hxjwt shared dir
-      #file:
-      #  path: '{{ hxjwt_shared_dir }}'
-      #  owner: '{{ service_user }}'
-      #  group: '{{ hxjwt_shared }}'
-      #  mode: '0770'
-      #  state: directory
+    - name: create hxjwt shared secret
+      shell: '/usr/bin/uuidgen > {{ hxjwt_shared_private_path }}'
+      when: not shared_result.failed and not shared_result.stat.exists
 
-      #- name: query system for shared secret file
-      #stat:
-      #  path: '{{ hxjwt_shared_private_path }}'
-      #register: shared_result
-
-      #- name: create hxjwt shared secret
-      #shell: '/usr/bin/uuidgen > {{ hxjwt_shared_private_path }}'
-      #when: not shared_result.failed and not shared_result.stat.exists
-
-      #- name: set permissions for hxjwt shared secret
-      #file:
-      #  path: '{{ hxjwt_shared_private_path }}'
-      #  owner: '{{ service_user }}'
-      #  group: '{{ hxjwt_shared }}'
-      #  mode: '0660'
+    - name: set permissions for hxjwt shared secret
+      file:
+        path: '{{ hxjwt_shared_private_path }}'
+        owner: '{{ service_user }}'
+        group: '{{ hxjwt_shared }}'
+        mode: '0660'
+      when: not shared_result.failed and not shared_result.stat.exists
 
     - name: setup to install node from NodeSource
       shell: 'curl -sL https://deb.nodesource.com/setup_13.x | sudo -E bash -'
@@ -130,16 +115,6 @@
     - name: copy and link certs for express app
       include_tasks: 'roles/nginx/tasks/copy_certs.yml'
 
-      #- name: config | drop shell wrapper file
-      #become_user: '{{ service_user }}'
-      #template:
-      #  src: 'roles/webapp_install/templates/socializeremotely.sh.j2'
-      #  dest: '{{ service_install_dir }}/socializeremotely.sh'
-      #  owner: '{{ service_user }}'
-      #  group: '{{ service_group }}'
-      #  mode: 0640
-      #  backup: yes
-
     - name: read shared secret
       shell: 'cat {{ hxjwt_shared_private_path }}'
       register: shared_secret_result
@@ -172,15 +147,14 @@
 
     - name: build nuxt distribution
       become_user: '{{ service_user }}'
-      shell: '(source {{ service_config_dir }}/{{ service_name }}.env; npm run build)'
-      args:
+      command:
+        cmd: 'npm run build'
         chdir: '{{ service_install_dir }}'
 
     - name: pm2 start node app
-      shell: 'pm2 start {{ service_install_dir }}/ecosystem.config.js'
+      shell: 'pm2 start {{ service_install_dir }}/ecosystem.config.js --env "production"; pm2 save'
 
     - name: pm2 register as systemd service
-      shell: 'pm2 startup systemd'
-      # shell: 'env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u socializeremotely --hp /home/socializeremotely'
+      command: 'pm2 startup systemd'
 
 

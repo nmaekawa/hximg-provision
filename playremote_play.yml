@@ -2,6 +2,11 @@
 #
 # assumes common_play.yml already applied to all involved inventory
 #
+# because using elb, decided that extra-ebs not needed
+# also, order matters:
+#   1. playremote_play.yml
+#   2. socializeremotely_play.yml
+#
 
 - hosts: '{{ target_hosts | default("tag_service_socializeremotely", true) }}'
   remote_user: "{{ my_remote_user }}"
@@ -35,10 +40,6 @@
         name: external/Stouts.users
       vars:
         users_users: '{{ local_users }}'
-
-    - include_role:
-        name: external/nmaekawa.extra-ebs
-      when: use_aws
 
     - name: create hxjwt shared dir
       file:
@@ -75,6 +76,17 @@
     - include_tasks: handlers/main.yml
 
   tasks:
+    - name: read shared secret
+      shell: 'cat {{ hxjwt_shared_private_path }}'
+      register: shared_secret_result
+
+    - debug:
+        var: shared_secret_result
+
+    - name: set shared secret in var
+      set_fact:
+          hxjwt_shared_secret: "{{ shared_secret_result.stdout }}"
+
     - name: install webapp
       include_role:
         name: webapp_install
@@ -99,7 +111,7 @@
 - import_playbook: nginx_backup_play.yml
   when: ec2_tag_cluster == 'prod'
 
-- import_playbook: route53_play.yml
+  #- import_playbook: route53_play.yml
   when: "ec2_tag_cluster not in ['prod', 'demo', 'vagrant']"
 
 

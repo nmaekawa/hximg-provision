@@ -5,7 +5,7 @@ SERVICE_INSTALL_DIR="{{ service_install_dir }}/{{ service_name }}"
 SOCKFILE="{{ service_venv_dir }}/run/gunicorn.sock"
 USER="{{ service_user }}"
 GROUP="{{ service_group }}"
-NUM_WORKERS="3"
+NUM_WORKERS="$(expr $(nproc) \* 2 + 1)"
 GUNICORN_PORT="{{ service_gunicorn_port }}"
 GUNICORN_HOST="{{ service_gunicorn_host }}"
 
