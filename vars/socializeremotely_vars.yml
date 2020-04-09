@@ -46,7 +46,7 @@ service_environment:
   API_URL: "http://localhost:8236/"
   BASE_URL: "https://{{ webserver_dns }}"
   DEV_EPPN: "test@{{ org_public_domain }}"
-  DEPLOY_ENV: "{{ ec2_tag_cluster == 'prod' | ternary('production', 'development') }}"
+  DEPLOY_ENV: "{{ (ec2_tag_cluster == 'prod') | ternary('production', 'development') }}"
   PORT: "8080"
   SERVICE_URL: "https://{{ webserver_dns }}/login"
   SENTRY_DSN: "{{ lookup('env', 'SENTRY_DSN') | default('http://localhost', true) }}"

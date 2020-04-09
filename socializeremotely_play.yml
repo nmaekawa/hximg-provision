@@ -3,16 +3,13 @@
 # assumes common_play.yml AND playremote_play.yml already applied to all involved inventory
 #
 
+
 - hosts: '{{ target_hosts | default("tag_service_socializeremotely", true) }}'
   remote_user: "{{ my_remote_user }}"
   become: yes
   become_user: root
   vars:
     local_users:
-      - name: dpmccabe
-        groups: ['sudo']
-        authorized:
-          - https://github.com/dpmccabe.keys
       - name: '{{ service_name }}'
         groups: ['{{ hxjwt_shared }}']
         authorized: []
