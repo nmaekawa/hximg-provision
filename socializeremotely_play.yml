@@ -29,23 +29,6 @@
       vars:
         users_users: '{{ local_users }}'
 
-    - name: query system for shared secret file
-      stat:
-        path: '{{ hxjwt_shared_private_path }}'
-      register: shared_result
-
-    - name: create hxjwt shared secret
-      shell: '/usr/bin/uuidgen > {{ hxjwt_shared_private_path }}'
-      when: not shared_result.failed and not shared_result.stat.exists
-
-    - name: set permissions for hxjwt shared secret
-      file:
-        path: '{{ hxjwt_shared_private_path }}'
-        owner: '{{ service_user }}'
-        group: '{{ hxjwt_shared }}'
-        mode: '0660'
-      when: not shared_result.failed and not shared_result.stat.exists
-
     - name: setup to install node from NodeSource
       shell: 'curl -sL https://deb.nodesource.com/setup_13.x | sudo -E bash -'
 
@@ -112,6 +95,7 @@
     - name: copy and link certs for express app
       include_tasks: 'roles/nginx/tasks/copy_certs.yml'
 
+      # file expected to be created in playremote_play.yml
     - name: read shared secret
       shell: 'cat {{ hxjwt_shared_private_path }}'
       register: shared_secret_result
