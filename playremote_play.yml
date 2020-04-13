@@ -97,6 +97,9 @@
     - name: create django admin user
       include_tasks: 'roles/webapp_install/tasks/django_admin_user.yml'
 
+    - name: restart django after collectstatic
+      command: '/usr/bin/supervisorctl restart {{ service_name }}'
+
     - name: config nginx
       include_role:
         name: nginx

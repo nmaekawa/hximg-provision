@@ -31,8 +31,8 @@ ALLOWED_HOSTS="{{ webserver_dns }}"
 PLAYREMOTE_ALLOWED_HOSTS='*'
 {% endif %}
 
-{% if service_name == 'socializeremotely' and sentry_dns != '' %}
-SENTRY_DNS="{{ sentry_dns }}"
+{% if service_name == 'socializeremotely' and sentry_dsn != '' %}
+SENTRY_DSN="{{ sentry_dsn }}"
 {% endif %}
 
 

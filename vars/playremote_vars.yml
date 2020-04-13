@@ -34,8 +34,9 @@ service_bin_dir: "{{ service_rootdir }}/bin"
 service_data_dir: "{{ service_rootdir }}/data"
 
 # specific to playremote
+# BEWARE that gunicorn is open to the **world** in this setup!
 service_gunicorn_port: "{{ lookup('env', 'PLAYREMOTE_GUNICORN_PORT') | default('8236', true) }}"
-service_gunicorn_host: "{{ lookup('env', 'PLAYREMOTE_GUNICORN_HOST') | default('127.0.0.1', true) }}"
+service_gunicorn_host: "{{ lookup('env', 'PLAYREMOTE_GUNICORN_HOST') | default('0.0.0.0', true) }}"
 gunicorn_timeout_seconds: 60  # workers timeout for nginx cfg
 
 service_git_repo: "https://github.com/HarvardX/{{ service_name }}.git"

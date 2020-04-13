@@ -106,15 +106,15 @@
     - name: set shared secret in var
       set_fact:
           hxjwt_shared_secret: "{{ shared_secret_result.stdout }}"
-
-    - name: config | drop .env file for express app
-      template:
-        src: 'roles/webapp_install/templates/service_dotenv.j2'
-        dest: '{{ service_install_dir }}/.env'
-        owner: '{{ service_user }}'
-        group: '{{ service_group }}'
-        mode: 0640
-        backup: yes
+    #
+    #- name: config | drop .env file for express app
+    #  template:
+    #    src: 'roles/webapp_install/templates/service_dotenv.j2'
+    #    dest: '{{ service_install_dir }}/.env'
+    #    owner: '{{ service_user }}'
+    #    group: '{{ service_group }}'
+    #    mode: 0640
+    #    backup: yes
 
     - name: config | drop pm2 ecosystem file
       become_user: '{{ service_user }}'
@@ -133,9 +133,14 @@
         chdir: '{{ service_install_dir }}'
 
     - name: pm2 start node app
-      shell: 'pm2 start {{ service_install_dir }}/ecosystem.config.js --env "production"; pm2 save'
+      become_user: '{{ service_user }}'
+      command: 'pm2 start {{ service_install_dir }}/ecosystem.config.js --env "production"'
+
+    - name: pm2 save apps
+      become_user: '{{ service_user }}'
+      command: 'pm2 save'
 
     - name: pm2 register as systemd service
-      command: 'pm2 startup systemd'
+      command: 'env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u {{ service_user }} --hp /home/{{ service_user }}'
 
 

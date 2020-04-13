@@ -11,9 +11,23 @@ module.exports = {
     watch: false,
     max_memory_restart: '1G',
     env: {
+{% for variable_name, value in service_environment.items() %}
+      {{ variable_name }}: '{{ value }}',
+{% endfor %}
+{% if sentry_dsn != '' %}
+      SENTRY_DSN: '{{ sentry_dsn }}',
+{% endif %}
+      DEPLOY_ENV: 'development',
       NODE_ENV: 'development'
     },
     env_production: {
+{% for variable_name, value in service_environment.items() %}
+      {{ variable_name }}: '{{ value }}',
+{% endfor %}
+{% if sentry_dsn != '' %}
+      SENTRY_DSN: '{{ sentry_dsn }}',
+{% endif %}
+      DEPLOY_ENV: 'production',
       NODE_ENV: 'production'
     }
   }],
