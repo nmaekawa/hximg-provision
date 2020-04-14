@@ -100,8 +100,9 @@
         path: '{{ service_install_dir }}/{{ service_name }}'
         state: present
 
-    - name: copy and link certs for express app
-      include_tasks: 'roles/nginx/tasks/copy_certs.yml'
+    #
+    #- name: copy and link certs for express app
+    #  include_tasks: 'roles/nginx/tasks/copy_certs.yml'
 
       # file expected to be created in playremote_play.yml
     - name: read shared secret
@@ -138,8 +139,7 @@
     - name: pm2 start node app
       become_user: '{{ service_user }}'
       command: >
-        pm2 start {{ service_install_dir }}/ecosystem.config.js
-        --env "{{ (ec2_tag_cluster == 'production') | ternary('production', 'development') }}"
+        pm2 start {{ service_install_dir }}/ecosystem.config.js --env 'production'
 
 
     - name: pm2 save apps
@@ -156,4 +156,11 @@
       vars:
         nginx_template_path: roles/nginx/templates/nginx_socializeremotely.j2
       when: not use_elb
+
+    - name: disable nginx if elb
+      service:
+        name: nginx
+        state: stopped
+        enabled: no
+      when: use_elb
 

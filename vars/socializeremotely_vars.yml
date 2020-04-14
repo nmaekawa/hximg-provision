@@ -55,6 +55,7 @@ service_environment:
   USE_SSL: "false"
   USE_SECURE_COOKIE: "{{ (ec2_tag_cluster == 'vagrant') | ternary('false', 'true') }}"
   HXJWT_PRIVATE: "{{ hxjwt_shared_secret }}"
+  DEPLOY_ENV: "{{ (ec2_tag_cluster == 'prod') | ternary('production', 'devo') }}"
 
 # service for error log monitoring (express app)
 sentry_dsn: "{{ lookup('env', 'SENTRY_DSN') | default('', true) }}"
