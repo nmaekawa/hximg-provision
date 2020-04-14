@@ -24,6 +24,7 @@
 
   vars_files:
     - vars/common_vars.yml
+    - vars/soc_remote_shared_vars.yml
     - vars/playremote_vars.yml
 
   tasks:
@@ -71,6 +72,7 @@
   become: yes
   vars_files:
     - vars/common_vars.yml
+    - vars/soc_remote_shared_vars.yml
     - vars/playremote_vars.yml
   handlers:
     - include_tasks: handlers/main.yml
@@ -105,6 +107,7 @@
         name: nginx
       vars:
         nginx_template_path: roles/nginx/templates/nginx_playremote.j2
+      when: not use_elb
 
 
   # install log/metrics scripts, syslog to s3, put-metrics to cloudwatch

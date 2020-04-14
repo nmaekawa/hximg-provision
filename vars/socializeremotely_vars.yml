@@ -25,6 +25,10 @@ service_config_dir: "{{ service_rootdir }}/conf"
 service_bin_dir: "{{ service_rootdir }}/bin"
 service_data_dir: "{{ service_rootdir }}/data"
 
+service_express_port: "{{ lookup('env', 'SOCIALIZEREMOTELY_EXPRESS_PORT') | default('8080', true) }}"
+service_express_host: "{{ lookup('env', 'SOCIALIZEREMOTELY_EXPRESS_HOST') | default('127.0.0.1', true) }}"
+express_timeout_seconds: 60  # workers timeout for nginx cfg
+
 service_git_repo: "git@github.com:harvard-vpal/socialize-remotely-nuxt.git"
 service_git_revision: "{{ lookup('env', 'SOCIALZEREMOTELY_GIT_REVISION') | default('master', true) }}"
 
@@ -37,14 +41,11 @@ service_dirs_to_create:
     - "{{ service_static_dir }}"
     - "{{ service_django_static_dir }}"
 
-# specific to webapp_install role
-service_dotenv_path: "{{ service_config_dir }}/{{ service_name }}.env"
-
 # express app config for playremote running in same box
-# beware that api_url port must match the one for playremote gunicorn
-proto: "{{ (ec2_tag_cluster == 'vagrant') | ternary('http', 'https') }}"
+proto: "{{ (ec2_tag_cluster != 'vagrant') | ternary('https', 'http') }}"
 service_environment:
   API_PREFIX: "/api/"
+  # beware that api_url port must match the one for playremote gunicorn
   API_URL: "http://localhost:8236/"
   BASE_URL: "{{ proto }}://{{ webserver_dns }}"
   DEV_EPPN: "test@{{ org_public_domain }}"
@@ -53,14 +54,10 @@ service_environment:
   SKIP_AUTH: "{{ (ec2_tag_cluster == 'vagrant') | ternary('true', 'false') }}"
   USE_SSL: "false"
   USE_SECURE_COOKIE: "{{ (ec2_tag_cluster == 'vagrant') | ternary('false', 'true') }}"
-  CERT_FILE_PATH: "{{ service_install_dir }}/{{ cert_dns }}.crt"
-  KEY_FILE_PATH: "{{ service_install_dir }}/{{ cert_dns }}.key"
   HXJWT_PRIVATE: "{{ hxjwt_shared_secret }}"
 
 # service for error log monitoring (express app)
 sentry_dsn: "{{ lookup('env', 'SENTRY_DSN') | default('', true) }}"
-# removed from service_environment, setting explicitly in ecosystem.config.json
-#  DEPLOY_ENV: "{{ (ec2_tag_cluster == 'prod') | ternary('production', 'development') }}"
 
 # for Stouts.users
 users_enabled: yes

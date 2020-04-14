@@ -16,6 +16,7 @@
 
   vars_files:
     - vars/common_vars.yml
+    - vars/soc_remote_shared_vars.yml
     - vars/socializeremotely_vars.yml
 
   tasks:
@@ -29,8 +30,14 @@
       vars:
         users_users: '{{ local_users }}'
 
-    - name: setup to install node from NodeSource
-      shell: 'curl -sL https://deb.nodesource.com/setup_13.x | sudo -E bash -'
+    - name: download script for NodeSource ppa
+      get_url:
+        url: 'https://deb.nodesource.com/setup_13.x'
+        dest: '/home/{{ service_user }}/nodesource_setup.sh'
+        mode: 755
+
+    - name:  install NodeSource ppa
+      command: 'bash /home/{{ service_user }}/nodesource_setup.sh'
 
     - name: install node from NodeSource
       apt:
@@ -49,8 +56,9 @@
   become: yes
   become_user: root
   vars_files:
-      - vars/common_vars.yml
-      - vars/socializeremotely_vars.yml
+    - vars/common_vars.yml
+    - vars/soc_remote_shared_vars.yml
+    - vars/socializeremotely_vars.yml
   handlers:
     - include_tasks: handlers/main.yml
 
@@ -77,14 +85,14 @@
     - name:  clone service repo with deploy key
       become_user: '{{ service_user }}'
       git:
-          repo: '{{ service_git_repo }}'
-          update: yes
-          clone: yes
-          force: yes
-          version: '{{ service_git_revision }}'
-          dest: '{{ service_install_dir }}'
-          key_file: '/home/{{ service_user }}/.ssh/id_rsa'
-          accept_hostkey: yes
+        repo: '{{ service_git_repo }}'
+        update: yes
+        clone: yes
+        force: yes
+        version: '{{ service_git_revision }}'
+        dest: '{{ service_install_dir }}'
+        key_file: '/home/{{ service_user }}/.ssh/id_rsa'
+        accept_hostkey: yes
 
     - name: install service dependencies
       become_user: '{{ service_user }}'
@@ -106,15 +114,7 @@
     - name: set shared secret in var
       set_fact:
           hxjwt_shared_secret: "{{ shared_secret_result.stdout }}"
-    #
-    #- name: config | drop .env file for express app
-    #  template:
-    #    src: 'roles/webapp_install/templates/service_dotenv.j2'
-    #    dest: '{{ service_install_dir }}/.env'
-    #    owner: '{{ service_user }}'
-    #    group: '{{ service_group }}'
-    #    mode: 0640
-    #    backup: yes
+
 
     - name: config | drop pm2 ecosystem file
       become_user: '{{ service_user }}'
@@ -126,21 +126,34 @@
         mode: 0640
         backup: yes
 
+
     - name: build nuxt distribution
       become_user: '{{ service_user }}'
+      environment: '{{ service_environment }}'
       command:
         cmd: 'npm run build'
         chdir: '{{ service_install_dir }}'
 
+
     - name: pm2 start node app
       become_user: '{{ service_user }}'
-      command: 'pm2 start {{ service_install_dir }}/ecosystem.config.js --env "production"'
+      command: >
+        pm2 start {{ service_install_dir }}/ecosystem.config.js
+        --env "{{ (ec2_tag_cluster == 'production') | ternary('production', 'development') }}"
+
 
     - name: pm2 save apps
       become_user: '{{ service_user }}'
       command: 'pm2 save'
 
+
     - name: pm2 register as systemd service
       command: 'env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u {{ service_user }} --hp /home/{{ service_user }}'
 
+    - name: config nginx
+      include_role:
+        name: nginx
+      vars:
+        nginx_template_path: roles/nginx/templates/nginx_socializeremotely.j2
+      when: not use_elb
 

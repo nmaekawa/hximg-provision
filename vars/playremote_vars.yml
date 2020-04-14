@@ -1,7 +1,10 @@
 ---
 
+#
 # PLAYREMOTE VARS
 # ----------------------------------------------------------------------------------
+# require soc_remote_shared_vars.yml
+#
 
 # service vars
 service_name: "playremote"
@@ -34,9 +37,8 @@ service_bin_dir: "{{ service_rootdir }}/bin"
 service_data_dir: "{{ service_rootdir }}/data"
 
 # specific to playremote
-# BEWARE that gunicorn is open to the **world** in this setup!
 service_gunicorn_port: "{{ lookup('env', 'PLAYREMOTE_GUNICORN_PORT') | default('8236', true) }}"
-service_gunicorn_host: "{{ lookup('env', 'PLAYREMOTE_GUNICORN_HOST') | default('0.0.0.0', true) }}"
+service_gunicorn_host: "{{ lookup('env', 'PLAYREMOTE_GUNICORN_HOST') | default('127.0.0.1', true) }}"
 gunicorn_timeout_seconds: 60  # workers timeout for nginx cfg
 
 service_git_repo: "https://github.com/HarvardX/{{ service_name }}.git"
@@ -97,8 +99,8 @@ apt_required_packages_playremote:
 # ----------------------------------------------------------------------------------
 
 enable_ssl: '{{ ec2_tag_cluster != "vagrant" }}'
-nginx_ssl_port: "{{ lookup('env', 'PLAYREMOTE_SSL_PORT') | default('3443', true) }}"
-nginx_non_ssl_port: "{{ lookup('env', 'PLAYREMOTE_NON_SSL_PORT') | default('3080', true) }}"
+nginx_ssl_port: "{{ lookup('env', 'PLAYREMOTE_SSL_PORT') | default('4443', true) }}"
+nginx_non_ssl_port: "{{ lookup('env', 'PLAYREMOTE_NON_SSL_PORT') | default('4080', true) }}"
 static_dir: '{{service_static_dir }}'
 nginx_ssl_dest_dir: '/etc/ssl/certs'
 cert_dns: 'socializeremotely'  # this name must match pattern for ssl cert names

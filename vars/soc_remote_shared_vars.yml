@@ -1,0 +1,5 @@
+---
+
+use_elb: "{{ ec2_tag_cluster == 'prod'}}"
+
+
