@@ -5,7 +5,7 @@ server {
     {% if webserver_dns is defined and webserver_dns != '' %}
     server_name  {{ webserver_dns }};
     {% endif %}
-    return  301  https://$host:{{ nginx_non_ssl_port | default(80, true) }}$request_uri;
+    return  301  https://$host:{{ nginx_non_ssl_port | default(443, true) }}$request_uri;
 }
 {% endif %}
 
