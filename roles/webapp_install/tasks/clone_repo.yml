@@ -1,4 +1,35 @@
 ---
+    - name: create .ssh dir
+      file:
+        path: '/home/{{ service_user }}/.ssh'
+        owner: '{{ service_user }}'
+        group: '{{ service_group }}'
+        mode: '0700'
+        state: directory
+      when: use_deploy_key is defined and use_deploy_key
+
+    - name: add private key for service user
+      copy:
+        src: '{{ local_certs_dir }}/{{ cert_dns }}/{{ service_name }}_deploy'
+        dest: '/home/{{ service_user }}/.ssh/id_rsa'
+        owner: '{{ service_user }}'
+        group: '{{ service_group }}'
+        mode: '0600'
+      when: use_deploy_key is defined and use_deploy_key
+
+    - name:  clone service repo with deploy key
+      become_user: '{{ service_user }}'
+      git:
+        repo: '{{ service_git_repo }}'
+        update: yes
+        clone: yes
+        force: yes
+        version: '{{ service_git_revision }}'
+        dest: '{{ service_install_dir }}'
+        key_file: '/home/{{ service_user }}/.ssh/id_rsa'
+        accept_hostkey: yes
+      when: use_deploy_key is defined and use_deploy_key
+
     - name: git | clone repository
       become_user: '{{ service_user }}'
       git:
@@ -8,4 +39,5 @@
           force: yes
           version: '{{ service_git_revision }}'
           dest: '{{ service_install_dir }}'
+      when: use_deploy_key is not defined or not use_deploy_key
 

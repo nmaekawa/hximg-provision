@@ -92,6 +92,8 @@
     - name: install webapp
       include_role:
         name: webapp_install
+      vars:
+        use_deploy_key: true
 
     - name: run migration and collectstatic
       include_tasks: 'roles/webapp_install/tasks/django_manage.yml'
