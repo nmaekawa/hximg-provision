@@ -56,6 +56,9 @@ service_environment:
   USE_SECURE_COOKIE: "{{ (ec2_tag_cluster == 'vagrant') | ternary('false', 'true') }}"
   HXJWT_PRIVATE: "{{ hxjwt_shared_secret }}"
   DEPLOY_ENV: "{{ (ec2_tag_cluster == 'prod') | ternary('production', 'devo') }}"
+  AWS_BUCKET_NAME: "{{ lookup('env', 'SR_AWS_BUCKET_NAME') | default('s3bucket', true) }}"
+  AWS_ACCESS_KEY_ID: "{{ lookup('env', 'SR_AWS_ACCESS_KEY_ID') | default('access_key_id', true) }}"
+  AWS_SECRET_ACCESS_KEY: "{{ lookup('env', 'SR_AWS_SECRET_ACCESS_KEY') | default('secret_access_key', true) }}"
 
 # service for error log monitoring (express app)
 sentry_dsn: "{{ lookup('env', 'SENTRY_DSN') | default('', true) }}"
