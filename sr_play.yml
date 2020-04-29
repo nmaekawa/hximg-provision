@@ -1,0 +1,9 @@
+#
+# assumes dbserver already configured with proper database&users
+#
+---
+
+- import_playbook: common_play.yml
+- import_playbook: playremote_play.yml
+- import_playbook: socializeremotely_play.yml
+
